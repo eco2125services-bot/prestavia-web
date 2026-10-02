@@ -212,16 +212,13 @@ section:not(.alt) .feature{background:var(--bg);}
 @media (max-width:700px){.rule-row{grid-template-columns:1fr;gap:4px;}.rule-row.head{display:none;}}
 
 /* auth panel */
-.auth-shell{display:grid;grid-template-columns:.9fr 1.1fr;gap:0;border:1px solid var(--border);border-radius:16px;overflow:hidden;background:var(--bg-raised);}
+.auth-shell{border:1px solid var(--border);border-radius:16px;overflow:hidden;background:var(--bg-raised);}
 .auth-shell > *{min-width:0;}
-@media (max-width:860px){.auth-shell{grid-template-columns:1fr;}}
-.auth-side{padding:40px 34px;background:linear-gradient(165deg, color-mix(in srgb, var(--accent-2) 18%, var(--bg-raised)), var(--bg-raised));border-right:1px solid var(--border);}
-@media (max-width:860px){.auth-side{border-right:none;border-bottom:1px solid var(--border);}}
-.auth-side h3{font-size:22px;}
-.auth-side p{color:var(--fg-muted);font-size:14.5px;margin-top:12px;}
-.auth-side ul{list-style:none;padding:0;margin:22px 0 0;display:flex;flex-direction:column;gap:12px;}
-.auth-side li{display:flex;gap:10px;font-size:13.5px;color:var(--fg-muted);align-items:flex-start;}
-.auth-side li svg{flex-shrink:0;margin-top:2px;color:var(--accent-2);}
+.auth-subtitle{font-size:18px;margin-top:14px;}
+.auth-subtext{color:var(--fg-muted);font-size:14.5px;margin-top:8px;max-width:62ch;}
+.auth-bullets{list-style:none;padding:0;margin:16px 0 0;display:flex;flex-wrap:wrap;gap:10px 28px;}
+.auth-bullets li{display:flex;gap:8px;font-size:13.5px;color:var(--fg-muted);align-items:flex-start;}
+.auth-bullets li svg{flex-shrink:0;margin-top:2px;color:var(--accent-2);}
 .auth-main{padding:34px;}
 .tabs{display:flex;gap:6px;margin-bottom:24px;border-bottom:1px solid var(--border);}
 .tab-btn{background:none;border:none;padding:10px 4px;margin-right:22px;font-size:14.5px;font-weight:700;color:var(--fg-muted);border-bottom:2px solid transparent;border-radius:0;}
@@ -271,11 +268,14 @@ td.num,th.num{font-family:var(--font-mono);}
 .row-actions{display:flex;gap:8px;flex-wrap:wrap;}
 .subnav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;}
 .subnav button.active{background:var(--accent);border-color:var(--accent);color:var(--accent-fg);}
-.pay-instructions{background:var(--bg-alt);border:1px solid var(--accent);border-radius:10px;padding:14px 16px;margin-bottom:18px;font-size:13.5px;}
-.pay-instructions strong{display:block;margin-bottom:8px;font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:var(--accent);}
-.pay-row{display:flex;justify-content:space-between;gap:12px;padding-block:3px;}
+.subnav button{position:relative;}
+.subnav .badge{margin-left:6px;font-family:var(--font-mono);font-size:10.5px;background:var(--danger);color:#fff;border-radius:99px;padding:1px 7px;}
+.subnav button.active .badge{background:var(--accent-fg);color:var(--accent);}
+.pay-instructions{background:var(--bg-alt);border:1px solid var(--accent);border-radius:10px;padding:10px 14px;margin-top:4px;margin-bottom:4px;font-size:12.5px;}
+.pay-instructions strong{display:block;margin-bottom:5px;font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--accent);}
+.pay-row{display:flex;justify-content:space-between;gap:12px;padding-block:2px;}
 .pay-row span:last-child{font-family:var(--font-mono);font-weight:700;text-align:right;}
-.pay-instructions .hint{margin-top:8px;}
+.pay-instructions .hint{margin-top:6px;margin-bottom:0;}
 .banner-pending{background:color-mix(in srgb, var(--accent) 14%, transparent);border:1px solid var(--accent);border-radius:10px;padding:14px 16px;margin-bottom:20px;font-size:13.5px;line-height:1.5;}
 .doc-list{display:flex;flex-direction:column;gap:8px;margin-bottom:14px;}
 .doc-item{display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--bg-alt);border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;}
@@ -283,7 +283,7 @@ td.num,th.num{font-family:var(--font-mono);}
 
 /* modal */
 .modal-overlay{position:fixed;inset:0;background:rgba(5,12,9,.6);backdrop-filter:blur(2px);display:flex;align-items:center;justify-content:center;padding:20px;z-index:200;}
-.modal-box{background:var(--bg-raised);border:1px solid var(--border-strong);border-radius:14px;padding:28px;max-width:440px;width:100%;max-height:88vh;overflow:auto;}
+.modal-box{background:var(--bg-raised);border:1px solid var(--border-strong);border-radius:14px;padding:24px;max-width:440px;width:100%;max-height:94vh;overflow:auto;}
 .modal-box h3{font-family:var(--font-display);font-size:20px;margin-bottom:6px;}
 .modal-box .modal-sub{color:var(--fg-muted);font-size:13.5px;margin-bottom:18px;line-height:1.5;}
 .modal-close{position:absolute;top:0;right:0;}
@@ -494,19 +494,16 @@ footer{border-top:1px solid var(--border);padding-block:44px;}
       <div class="section-head">
         <div class="eyebrow" id="authEyebrow">Empieza ahora</div>
         <h2 id="authHeading">Crea tu cuenta o inicia sesión</h2>
+        <h3 id="authSideTitle" class="auth-subtitle">Tu dinero, con reglas claras</h3>
+        <p id="authSideText" class="auth-subtext">Regístrate como prestamista para ofertar en solicitudes abiertas, o como prestatario para publicar la tuya en minutos.</p>
+        <ul id="authSideList" class="auth-bullets">
+          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M5 13L9 17L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg> Sin costo por explorar solicitudes abiertas</li>
+          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M5 13L9 17L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg> Contrato y pagaré generados automáticamente</li>
+          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M5 13L9 17L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg> Panel propio para seguir cada préstamo</li>
+        </ul>
       </div>
 
       <div class="auth-shell">
-        <div class="auth-side">
-          <h3 id="authSideTitle">Tu dinero, con reglas claras</h3>
-          <p id="authSideText">Regístrate como prestamista para ofertar en solicitudes abiertas, o como prestatario para publicar la tuya en minutos.</p>
-          <ul id="authSideList">
-            <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M5 13L9 17L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg> Sin costo por explorar solicitudes abiertas</li>
-            <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M5 13L9 17L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg> Contrato y pagaré generados automáticamente</li>
-            <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M5 13L9 17L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg> Panel propio para seguir cada préstamo</li>
-          </ul>
-        </div>
-
         <div class="auth-main">
           <div class="tabs">
             <button class="tab-btn active" data-tab="registro">Registrarme</button>
@@ -732,9 +729,9 @@ footer{border-top:1px solid var(--border);padding-block:44px;}
      transferencia bancaria, etc.) antes de publicar. Se usan en la pantalla
      de registro del prestamista, en el panel mientras su suscripción no
      esté activa, y en los formularios de reportar pago de cuota/comisión. */
-  var PAYMENT_METODO = "[COMPLETAR: ej. Zelle]";
-  var PAYMENT_DESTINATARIO = "[COMPLETAR: nombre del titular de la cuenta]";
-  var PAYMENT_CUENTA = "[COMPLETAR: email de Zelle o número de cuenta]";
+  var PAYMENT_METODO = "Zelle";
+  var PAYMENT_DESTINATARIO = "Confirma el nombre que te muestre tu banco al enviar — debe coincidir con esta cuenta";
+  var PAYMENT_CUENTA = "eco2125services@gmail.com";
   function paymentInstructionsHtml(montoTexto){
     return '<div class="pay-instructions">' +
       '<strong>Cómo pagar</strong>' +
@@ -745,6 +742,10 @@ footer{border-top:1px solid var(--border);padding-block:44px;}
       '<p class="hint">Después de pagar, reporta aquí la referencia — un administrador confirma la transacción manualmente.</p>' +
     '</div>';
   }
+
+  /* ---------- límite de tamaño de archivo (el backend acepta hasta 18MB) ---------- */
+  var MAX_UPLOAD_BYTES = 18 * 1024 * 1024;
+  function archivoDemasiadoGrande(file){ return file && file.size > MAX_UPLOAD_BYTES; }
 
   /* ---------- convertir archivo a base64 (para subir comprobantes/documentos) ---------- */
   function fileToBase64(file){
@@ -1065,6 +1066,39 @@ footer{border-top:1px solid var(--border);padding-block:44px;}
     return "$" + num.toLocaleString("en-US", {minimumFractionDigits:2, maximumFractionDigits:2});
   }
 
+  /* ---------- badges de pendientes en el subnav (prestatario/prestamista) ---------- */
+  function setBadgePv(key, n){
+    var el = document.getElementById("subBadge-" + key);
+    if(!el) return;
+    if(n > 0){ el.hidden = false; el.textContent = n; }
+    else { el.hidden = true; }
+  }
+  // Calcula los badges de todas las pestañas al abrir el dashboard, sin
+  // esperar a que el usuario entre a cada una — así ve de una vez qué tiene
+  // pendiente, igual que el panel de administrador.
+  function cargarBadgesDash(token, esPrestamista){
+    if(esPrestamista){
+      apiGet("/marketplace/mis-prestamos", token).then(function(r){
+        if(!(r.data && r.data.exito)) return;
+        var rows = r.data.datos || [];
+        var n = rows.filter(function(o){ return o.estatus === "Financiada" || o.estatus === "Por_Desembolsar"; }).length;
+        setBadgePv("mis-prestamos", n);
+      }).catch(function(){});
+    } else {
+      apiGet("/marketplace/mis-solicitudes", token).then(function(r){
+        if(!(r.data && r.data.exito)) return;
+        var rows = r.data.datos || [];
+        var n = rows.filter(function(o){ return o.estatusOp === "En Negociacion" || o.estatusOp === "En_Negociacion" || o.estatusOp === "Financiada"; }).length;
+        setBadgePv("mis-solicitudes", n);
+      }).catch(function(){});
+      apiGet("/pagos/mis-cuotas", token).then(function(r){
+        if(!(r.data && r.data.exito)) return;
+        var rows = r.data.datos || [];
+        setBadgePv("mis-cuotas", rows.length);
+      }).catch(function(){});
+    }
+  }
+
   function renderDashboard(usuario, token){
     resetInactivityTimer();
     formLogin.hidden = true;
@@ -1073,8 +1107,8 @@ footer{border-top:1px solid var(--border);padding-block:44px;}
 
     var esPrestamista = usuario.rol === "Prestamista";
     var tabs = esPrestamista
-      ? [["oportunidades","Oportunidades"], ["mis-prestamos","Mis préstamos"]]
-      : [["mis-solicitudes","Mis solicitudes"], ["mis-cuotas","Mis cuotas"], ["mis-documentos","Mis documentos"]];
+      ? [["oportunidades","Oportunidades"], ["mis-prestamos","Mis préstamos"], ["mi-perfil","Mi perfil"]]
+      : [["mis-solicitudes","Mis solicitudes"], ["mis-cuotas","Mis cuotas"], ["mis-documentos","Mis documentos"], ["mi-perfil","Mi perfil"]];
 
     dashboardEl.innerHTML =
       '<div class="dash-header">' +
@@ -1107,11 +1141,12 @@ footer{border-top:1px solid var(--border);padding-block:44px;}
       "mis-prestamos": function(){ renderMisPrestamos(dashBody, token, usuario); },
       "mis-solicitudes": function(){ renderMisSolicitudes(dashBody, token, usuario); },
       "mis-cuotas": function(){ renderMisCuotas(dashBody, token, usuario); },
-      "mis-documentos": function(){ renderMisDocumentos(dashBody, token, usuario); }
+      "mis-documentos": function(){ renderMisDocumentos(dashBody, token, usuario); },
+      "mi-perfil": function(){ renderMiPerfil(dashBody, token, usuario); }
     };
 
     subNav.innerHTML = tabs.map(function(t, i){
-      return '<button class="btn btn-ghost btn-sm' + (i === 0 ? ' active' : '') + '" data-subview="' + t[0] + '">' + t[1] + '</button>';
+      return '<button class="btn btn-ghost btn-sm' + (i === 0 ? ' active' : '') + '" data-subview="' + t[0] + '">' + t[1] + '<span class="badge" id="subBadge-' + t[0] + '" hidden></span></button>';
     }).join("");
     subNav.querySelectorAll("[data-subview]").forEach(function(b){
       b.addEventListener("click", function(){
@@ -1121,6 +1156,7 @@ footer{border-top:1px solid var(--border);padding-block:44px;}
       });
     });
     loadersDash[tabs[0][0]]();
+    cargarBadgesDash(token, esPrestamista);
   }
 
   /* ---------- prestamista: oportunidades abiertas ---------- */
@@ -1154,6 +1190,7 @@ footer{border-top:1px solid var(--border);padding-block:44px;}
     apiGet("/marketplace/mis-prestamos", token).then(function(r){
       if(!(r.data && r.data.exito)){ dashBody.innerHTML = '<div class="empty-state">' + friendlyError(r.data) + '</div>'; return; }
       var rows = r.data.datos || [];
+      setBadgePv("mis-prestamos", rows.filter(function(o){ return o.estatus === "Financiada" || o.estatus === "Por_Desembolsar"; }).length);
       if(rows.length === 0){ dashBody.innerHTML = '<div class="empty-state">Todavía no has financiado ningún préstamo.</div>'; return; }
       var html = '<div class="table-wrap"><table><thead><tr><th>Operación</th><th>Prestatario</th><th class="num">Monto</th><th class="num">Tasa</th><th class="num">Cuota</th><th>Estatus</th><th>Acciones</th></tr></thead><tbody>';
       rows.forEach(function(o){
@@ -1186,12 +1223,18 @@ footer{border-top:1px solid var(--border);padding-block:44px;}
     apiGet("/marketplace/mis-solicitudes", token).then(function(r){
       if(!(r.data && r.data.exito)){ dashBody.innerHTML = '<div class="empty-state">' + friendlyError(r.data) + '</div>'; return; }
       var rows = r.data.datos || [];
+      setBadgePv("mis-solicitudes", rows.filter(function(o){ return o.estatusOp === "En Negociacion" || o.estatusOp === "En_Negociacion" || o.estatusOp === "Financiada"; }).length);
       if(rows.length === 0){ dashBody.innerHTML = '<div class="empty-state">Todavía no tienes solicitudes publicadas.</div>'; return; }
-      var html2 = '<div class="table-wrap"><table><thead><tr><th>Operación</th><th class="num">Monto</th><th class="num">Tasa</th><th class="num">Cuota</th><th class="num">Saldo</th><th>Estatus</th><th>Acción</th></tr></thead><tbody>';
+      var hayFinanciadaSinDocs = rows.some(function(o){ return o.estatusOp === "Financiada"; });
+      var html2 = hayFinanciadaSinDocs ?
+        '<div class="banner-pending"><strong>Falta un paso.</strong> Aceptaste una oferta — ahora el prestamista necesita que subas tu <strong>cédula/pasaporte</strong> y <strong>fotos del bien en garantía</strong> para poder generar tu contrato. Ve a la pestaña "Mis documentos" arriba y súbelos.</div>' : '';
+      html2 += '<div class="table-wrap"><table><thead><tr><th>Operación</th><th class="num">Monto</th><th class="num">Tasa</th><th class="num">Cuota</th><th class="num">Saldo</th><th>Estatus</th><th>Acción</th></tr></thead><tbody>';
       rows.forEach(function(o){
         var accion2 = "—";
         if(o.estatusOp === "En Negociacion" || o.estatusOp === "En_Negociacion"){
           accion2 = "<button class=\"btn btn-primary btn-sm\" data-responder=\"" + o.idOp + "\" data-tasa=\"" + (o.tasaAceptada || o.tasa || 0) + "\" data-monto=\"" + o.montoSolicitado + "\" data-plazo=\"" + o.plazoMeses + "\">Ver oferta</button>";
+        } else if(o.estatusOp === "Financiada"){
+          accion2 = "<span class=\"hint\">Falta subir documentos</span>";
         }
         html2 += "<tr><td>" + o.idOp + "</td><td class=\"num\">" + money(o.montoSolicitado) + "</td><td class=\"num\">" + ((o.tasaAceptada || o.tasa) ? (o.tasaAceptada || o.tasa) + "%" : "—") + "</td><td class=\"num\">" + money(o.cuotaMensual) + "</td><td class=\"num\">" + money(o.saldoTotalPendiente) + "</td><td>" + statusChip(o.estatusOp) + "</td><td>" + accion2 + "</td></tr>";
       });
@@ -1216,6 +1259,7 @@ footer{border-top:1px solid var(--border);padding-block:44px;}
     apiGet("/pagos/mis-cuotas", token).then(function(r){
       if(!(r.data && r.data.exito)){ dashBody.innerHTML = '<div class="empty-state">' + friendlyError(r.data) + '</div>'; return; }
       var rows = r.data.datos || [];
+      setBadgePv("mis-cuotas", rows.length);
       if(rows.length === 0){ dashBody.innerHTML = '<div class="empty-state">No tienes cuotas pendientes en este momento.</div>'; return; }
       var html = '<div class="table-wrap"><table><thead><tr><th>Operación</th><th class="num">Cuota #</th><th class="num">Monto</th><th>Vence</th><th>Acción</th></tr></thead><tbody>';
       rows.forEach(function(c){
@@ -1275,6 +1319,77 @@ footer{border-top:1px solid var(--border);padding-block:44px;}
   function escapeHtmlPv(s){
     return (s || "").toString().replace(/[&<>"']/g, function(c){
       return { "&":"&amp;", "<":"&lt;", ">":"&gt;", "\"":"&quot;", "'":"&#39;" }[c];
+    });
+  }
+
+  /* ---------- mi perfil (ambos roles): ver/editar datos + cambiar contraseña ---------- */
+  function renderMiPerfil(dashBody, token, usuario){
+    dashBody.innerHTML = '<div class="empty-state">Cargando…</div>';
+    apiGet("/usuarios/mi-perfil", token).then(function(r){
+      if(!(r.data && r.data.exito)){ dashBody.innerHTML = '<div class="empty-state">' + friendlyError(r.data) + '</div>'; return; }
+      var d = r.data.datos;
+      dashBody.innerHTML =
+        '<form id="formPerfil" style="max-width:420px;">' +
+          '<label>Nombre completo<input type="text" name="nombreLegal" value="' + escapeHtmlPv(d.nombre_legal) + '" required></label>' +
+          '<label>Email <span class="hint">— no editable, es tu usuario de acceso</span><input type="email" value="' + escapeHtmlPv(d.email) + '" disabled></label>' +
+          '<label>Teléfono<input type="text" name="telefono" value="' + escapeHtmlPv(d.telefono) + '"></label>' +
+          '<label>Dirección<input type="text" name="direccion" value="' + escapeHtmlPv(d.direccion_fiscal) + '"></label>' +
+          '<div id="msgPerfil" class="form-msg"></div>' +
+          '<div class="modal-actions" style="justify-content:flex-start;">' +
+            '<button type="submit" class="btn btn-primary">Guardar cambios</button>' +
+          '</div>' +
+        '</form>' +
+        '<h3 style="margin:28px 0 10px;">Cambiar contraseña</h3>' +
+        '<form id="formNuevaClave" style="max-width:420px;">' +
+          '<label>Nueva contraseña (mínimo 6 caracteres)<input type="password" name="nuevaClave" minlength="6" required></label>' +
+          '<div id="msgClave" class="form-msg"></div>' +
+          '<div class="modal-actions" style="justify-content:flex-start;">' +
+            '<button type="submit" class="btn btn-ghost">Actualizar contraseña</button>' +
+          '</div>' +
+        '</form>';
+
+      document.getElementById("formPerfil").addEventListener("submit", function(e){
+        e.preventDefault();
+        var msg = document.getElementById("msgPerfil");
+        msg.className = "form-msg"; msg.textContent = "";
+        var data = formToObject(e.target);
+        apiPatchAuth("/usuarios/mi-perfil", data, token).then(function(r2){
+          if(r2.data && r2.data.exito){
+            msg.classList.add("show","ok"); msg.textContent = r2.data.mensaje || "Guardado.";
+            toast("ok", "Tu información fue actualizada.");
+          } else {
+            msg.classList.add("show","err"); msg.textContent = friendlyError(r2.data);
+          }
+        }).catch(function(){
+          msg.classList.add("show","err"); msg.textContent = "No se pudo conectar. Intenta de nuevo.";
+        });
+      });
+
+      document.getElementById("formNuevaClave").addEventListener("submit", function(e){
+        e.preventDefault();
+        var msg = document.getElementById("msgClave");
+        msg.className = "form-msg"; msg.textContent = "";
+        var nuevaClave = formToObject(e.target).nuevaClave;
+        apiCall("/auth/actualizar-clave", { email: d.email, nuevaClave: nuevaClave }).then(function(r2){
+          if(r2.data && r2.data.exito){
+            msg.classList.add("show","ok"); msg.textContent = r2.data.mensaje || "Contraseña actualizada.";
+            e.target.reset();
+          } else {
+            msg.classList.add("show","err"); msg.textContent = friendlyError(r2.data);
+          }
+        }).catch(function(){
+          msg.classList.add("show","err"); msg.textContent = "No se pudo conectar. Intenta de nuevo.";
+        });
+      });
+    }).catch(function(){ dashBody.innerHTML = '<div class="empty-state">No pudimos cargar tus datos. Intenta de nuevo en un momento.</div>'; });
+  }
+  function apiPatchAuth(path, body, token){
+    return fetch(API_BASE + path, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
+      body: JSON.stringify(body || {})
+    }).then(function(res){
+      return res.json().then(function(data){ return { status: res.status, data: data }; });
     });
   }
 
@@ -1372,12 +1487,12 @@ footer{border-top:1px solid var(--border);padding-block:44px;}
     openModal(
       '<h3>Reportar pago de cuota</h3>' +
       '<p class="modal-sub">Sube el comprobante de tu transferencia o pago y un administrador la validará.</p>' +
-      paymentInstructionsHtml(money(montoSugerido)) +
       '<form id="formCuota">' +
         '<label>Monto pagado (USD)<input type="number" name="montoPagado" min="0.01" step="0.01" value="' + montoSugerido + '" required></label>' +
         '<label>Método de pago<select name="metodoPago"><option value="Zelle">Zelle</option><option value="Transferencia">Transferencia bancaria</option><option value="Efectivo">Efectivo</option><option value="Otro">Otro</option></select></label>' +
         '<label>Referencia / número de confirmación<input type="text" name="referencia" placeholder="Opcional"></label>' +
-        '<label>Comprobante (foto o captura) <span class="hint">— opcional</span><input type="file" name="comprobante" accept="image/*,application/pdf"></label>' +
+        '<label>Comprobante (foto o captura) <span class="hint">— opcional, máx. 18 MB</span><input type="file" name="comprobante" accept="image/*,application/pdf"></label>' +
+        paymentInstructionsHtml(money(montoSugerido)) +
         '<div id="msgCuota" class="form-msg"></div>' +
         '<div class="modal-actions">' +
           '<button type="button" class="btn btn-ghost" id="btnCancelarCuota">Cancelar</button>' +
@@ -1393,6 +1508,10 @@ footer{border-top:1px solid var(--border);padding-block:44px;}
       var data = formToObject(e.target);
       var fileInput = e.target.querySelector("input[name=comprobante]");
       var file = fileInput.files[0];
+      if(archivoDemasiadoGrande(file)){
+        msg.classList.add("show","err"); msg.textContent = "Ese archivo pesa demasiado — usa una foto o PDF de menos de 18 MB.";
+        return;
+      }
       var submitBtn = e.target.querySelector("button[type=submit]");
       submitBtn.disabled = true;
 
@@ -1423,12 +1542,12 @@ footer{border-top:1px solid var(--border);padding-block:44px;}
     openModal(
       '<h3>Reportar pago de comisión</h3>' +
       '<p class="modal-sub">Comisión de plataforma (5%) sobre la operación <strong>' + idOp + '</strong>.</p>' +
-      paymentInstructionsHtml("$" + montoSugerido) +
       '<form id="formComision">' +
         '<label>Monto pagado (USD)<input type="number" name="montoPagado" min="0.01" step="0.01" value="' + montoSugerido + '" required></label>' +
         '<label>Método de pago<select name="metodoPago"><option value="Zelle">Zelle</option><option value="Transferencia">Transferencia bancaria</option><option value="Efectivo">Efectivo</option><option value="Otro">Otro</option></select></label>' +
         '<label>Referencia / número de confirmación<input type="text" name="referencia" placeholder="Opcional"></label>' +
-        '<label>Comprobante (foto o captura) <span class="hint">— opcional</span><input type="file" name="comprobante" accept="image/*,application/pdf"></label>' +
+        '<label>Comprobante (foto o captura) <span class="hint">— opcional, máx. 18 MB</span><input type="file" name="comprobante" accept="image/*,application/pdf"></label>' +
+        paymentInstructionsHtml("$" + montoSugerido) +
         '<div id="msgComision" class="form-msg"></div>' +
         '<div class="modal-actions">' +
           '<button type="button" class="btn btn-ghost" id="btnCancelarComision">Cancelar</button>' +
@@ -1444,6 +1563,10 @@ footer{border-top:1px solid var(--border);padding-block:44px;}
       var data = formToObject(e.target);
       var fileInput = e.target.querySelector("input[name=comprobante]");
       var file = fileInput.files[0];
+      if(archivoDemasiadoGrande(file)){
+        msg.classList.add("show","err"); msg.textContent = "Ese archivo pesa demasiado — usa una foto o PDF de menos de 18 MB.";
+        return;
+      }
       var submitBtn = e.target.querySelector("button[type=submit]");
       submitBtn.disabled = true;
 
@@ -1476,7 +1599,7 @@ footer{border-top:1px solid var(--border);padding-block:44px;}
       '<h3>' + (esIdentidad ? "Subir cédula o pasaporte" : "Subir foto del bien en garantía") + '</h3>' +
       '<p class="modal-sub">' + (esIdentidad ? "Una foto clara del documento, legible, sin reflejos." : "Fotos del bien que declaraste como garantía.") + '</p>' +
       '<form id="formDoc">' +
-        '<label>Archivo<input type="file" name="archivo" accept="image/*,application/pdf" required></label>' +
+        '<label>Archivo <span class="hint">— máx. 18 MB</span><input type="file" name="archivo" accept="image/*,application/pdf" required></label>' +
         '<div id="msgDoc" class="form-msg"></div>' +
         '<div class="modal-actions">' +
           '<button type="button" class="btn btn-ghost" id="btnCancelarDoc">Cancelar</button>' +
@@ -1491,6 +1614,10 @@ footer{border-top:1px solid var(--border);padding-block:44px;}
       msg.className = "form-msg"; msg.textContent = "";
       var file = e.target.querySelector("input[name=archivo]").files[0];
       if(!file){ return; }
+      if(archivoDemasiadoGrande(file)){
+        msg.classList.add("show","err"); msg.textContent = "Ese archivo pesa demasiado — usa una foto o PDF de menos de 18 MB.";
+        return;
+      }
       var submitBtn = e.target.querySelector("button[type=submit]");
       submitBtn.disabled = true;
       fileToBase64(file).then(function(b64){
@@ -1519,6 +1646,7 @@ footer{border-top:1px solid var(--border);padding-block:44px;}
       var docs = res[1].data && res[1].data.exito ? res[1].data.datos : { identidad: [], bien: [] };
       var todos = (docs.identidad || []).concat(docs.bien || []);
       var hayAlertaIA = todos.some(function(d){ return d.estatusIA === "Revision_Manual_IA"; });
+      var faltanDocumentos = (docs.identidad || []).length === 0 || (docs.bien || []).length === 0;
 
       function listaHtml(items, titulo, vacio){
         var filas = items.length ? items.map(function(it){
@@ -1533,16 +1661,20 @@ footer{border-top:1px solid var(--border);padding-block:44px;}
         '<h3>Revisar documentos — ' + idOp + '</h3>' +
         '<p class="modal-sub">Estatus actual: ' + statusChip(aprobacion.estatus) + '</p>' +
         (hayAlertaIA ? '<div class="form-msg show err">⚠️ La IA marcó inconsistencias en al menos un documento (puede incluir que el país del documento no coincide con el país declarado). Revísalo con cuidado antes de aprobar.</div>' : '') +
+        (!yaDecidido && faltanDocumentos ? '<div class="form-msg show err">El prestatario todavía no sube todos los documentos — no puedes aprobar ni generar el contrato hasta que estén completos. Puedes pedírselos con el botón de abajo.</div>' : '') +
         listaHtml(docs.identidad || [], "Identidad", "El prestatario todavía no sube su documento de identidad.") +
         listaHtml(docs.bien || [], "Bien en garantía", "El prestatario todavía no sube fotos del bien.") +
         (yaDecidido ? '<p class="hint" style="margin-top:18px;">Ya se registró una decisión para esta operación' + (aprobacion.notas ? ": " + escapeHtmlPv(aprobacion.notas) : "") + '.</p>' :
-          '<form id="formAprobar" style="margin-top:18px;">' +
+          '<div class="modal-actions" style="margin-top:14px;">' +
+            '<button type="button" class="btn btn-ghost" id="btnSolicitarDocs">Pedir documentos al prestatario</button>' +
+          '</div>' +
+          '<form id="formAprobar" style="margin-top:14px;">' +
             (hayAlertaIA ? '<label style="flex-direction:row;align-items:center;gap:8px;"><input type="checkbox" name="bajoResponsabilidad" style="width:auto;"> Apruebo bajo mi responsabilidad a pesar de la alerta de la IA</label>' : '') +
             '<label>Notas (opcional)<textarea name="notas" rows="2" placeholder="Observaciones para el expediente"></textarea></label>' +
             '<div id="msgAprobar" class="form-msg"></div>' +
             '<div class="modal-actions">' +
               '<button type="button" class="btn btn-ghost" id="btnRechazarDocs">Rechazar</button>' +
-              '<button type="submit" class="btn btn-primary">Aprobar y generar contrato</button>' +
+              '<button type="submit" class="btn btn-primary"' + (faltanDocumentos ? ' disabled title="Faltan documentos por subir"' : '') + '>Aprobar y generar contrato</button>' +
             '</div>' +
           '</form>')
       );
@@ -1552,8 +1684,22 @@ footer{border-top:1px solid var(--border);padding-block:44px;}
       });
 
       if(!yaDecidido){
+        document.getElementById("btnSolicitarDocs").addEventListener("click", function(){
+          var mensaje = prompt("Mensaje para el prestatario (opcional):", "Por favor sube tu cédula y fotos del bien en garantía para poder continuar.");
+          if(mensaje === null) return;
+          apiPostAuth("/marketplace/solicitar-documentos", { idOp: idOp, mensajePersonalizado: mensaje }, token).then(function(r){
+            if(r.data && r.data.exito){ toast("ok", r.data.mensaje || "Solicitud registrada."); }
+            else { toast("err", friendlyError(r.data)); }
+          }).catch(function(){ toast("err", "No se pudo conectar. Intenta de nuevo."); });
+        });
+
         var msgAprobar = document.getElementById("msgAprobar");
         function decidir(aprobado){
+          if(aprobado && faltanDocumentos){
+            msgAprobar.classList.add("show","err");
+            msgAprobar.textContent = "No puedes aprobar: todavía faltan documentos por subir.";
+            return;
+          }
           var bajoResponsabilidad = false;
           var notas = "";
           var form = document.getElementById("formAprobar");
