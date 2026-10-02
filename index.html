@@ -268,6 +268,37 @@ td.num,th.num{font-family:var(--font-mono);}
 .status-chip.good{color:var(--accent-2);border-color:var(--accent-2);}
 .status-chip.wait{color:var(--accent);border-color:var(--accent);}
 .empty-state{padding:34px;text-align:center;color:var(--fg-muted);font-size:14px;}
+.row-actions{display:flex;gap:8px;flex-wrap:wrap;}
+.subnav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;}
+.subnav button.active{background:var(--accent);border-color:var(--accent);color:var(--accent-fg);}
+.pay-instructions{background:var(--bg-alt);border:1px solid var(--accent);border-radius:10px;padding:14px 16px;margin-bottom:18px;font-size:13.5px;}
+.pay-instructions strong{display:block;margin-bottom:8px;font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:var(--accent);}
+.pay-row{display:flex;justify-content:space-between;gap:12px;padding-block:3px;}
+.pay-row span:last-child{font-family:var(--font-mono);font-weight:700;text-align:right;}
+.pay-instructions .hint{margin-top:8px;}
+.banner-pending{background:color-mix(in srgb, var(--accent) 14%, transparent);border:1px solid var(--accent);border-radius:10px;padding:14px 16px;margin-bottom:20px;font-size:13.5px;line-height:1.5;}
+.doc-list{display:flex;flex-direction:column;gap:8px;margin-bottom:14px;}
+.doc-item{display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--bg-alt);border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;}
+.file-drop{border:1px dashed var(--border-strong);border-radius:10px;padding:16px;text-align:center;font-size:13px;color:var(--fg-muted);}
+
+/* modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(5,12,9,.6);backdrop-filter:blur(2px);display:flex;align-items:center;justify-content:center;padding:20px;z-index:200;}
+.modal-box{background:var(--bg-raised);border:1px solid var(--border-strong);border-radius:14px;padding:28px;max-width:440px;width:100%;max-height:88vh;overflow:auto;}
+.modal-box h3{font-family:var(--font-display);font-size:20px;margin-bottom:6px;}
+.modal-box .modal-sub{color:var(--fg-muted);font-size:13.5px;margin-bottom:18px;line-height:1.5;}
+.modal-close{position:absolute;top:0;right:0;}
+.modal-actions{display:flex;gap:10px;margin-top:6px;flex-wrap:wrap;}
+.modal-actions .btn{flex:1;}
+.offer-summary{background:var(--bg-alt);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:18px;font-size:13.5px;display:flex;flex-direction:column;gap:6px;}
+.offer-summary div{display:flex;justify-content:space-between;gap:12px;}
+.offer-summary span:last-child{font-family:var(--font-mono);font-weight:700;}
+
+/* toast */
+#toastRoot{position:fixed;top:18px;right:18px;z-index:300;display:flex;flex-direction:column;gap:10px;max-width:340px;}
+.toast-item{background:var(--bg-raised);border:1px solid var(--border-strong);border-radius:10px;padding:13px 16px;font-size:13.5px;line-height:1.4;box-shadow:0 10px 30px rgba(0,0,0,.25);animation:toastIn .2s ease;}
+.toast-item.ok{border-color:var(--accent-2);}
+.toast-item.err{border-color:var(--danger);}
+@keyframes toastIn{from{opacity:0;transform:translateY(-8px);}to{opacity:1;transform:translateY(0);}}
 
 /* faq */
 .faq{max-width:760px;}
@@ -654,10 +685,107 @@ footer{border-top:1px solid var(--border);padding-block:44px;}
   </div>
 </footer>
 
+<div id="toastRoot" aria-live="polite"></div>
+<div id="modalRoot"></div>
+
 <script>
 (function(){
   "use strict";
   var API_BASE = "https://prestavia-backend.onrender.com";
+
+  /* ---------- toast ---------- */
+  function toast(kind, msg){
+    var root = document.getElementById("toastRoot");
+    var el = document.createElement("div");
+    el.className = "toast-item " + (kind === "ok" ? "ok" : "err");
+    el.textContent = msg;
+    root.appendChild(el);
+    setTimeout(function(){ el.remove(); }, 5000);
+  }
+
+  /* ---------- modal ---------- */
+  function closeModal(){
+    var root = document.getElementById("modalRoot");
+    root.innerHTML = "";
+  }
+  function openModal(innerHtml){
+    var root = document.getElementById("modalRoot");
+    root.innerHTML = '<div class="modal-overlay" id="modalOverlay"><div class="modal-box">' + innerHtml + '</div></div>';
+    document.getElementById("modalOverlay").addEventListener("click", function(e){
+      if(e.target.id === "modalOverlay") closeModal();
+    });
+  }
+
+  /* ---------- authenticated POST (for ofertas / respuestas) ---------- */
+  function apiPostAuth(path, body, token){
+    return fetch(API_BASE + path, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
+      body: JSON.stringify(body || {})
+    }).then(function(res){
+      return res.json().then(function(data){ return { status: res.status, data: data }; });
+    });
+  }
+
+  /* ---------- instrucciones de pago ----------
+     ⚠️ PENDIENTE: reemplaza estos 3 valores con tus datos reales (Zelle,
+     transferencia bancaria, etc.) antes de publicar. Se usan en la pantalla
+     de registro del prestamista, en el panel mientras su suscripción no
+     esté activa, y en los formularios de reportar pago de cuota/comisión. */
+  var PAYMENT_METODO = "[COMPLETAR: ej. Zelle]";
+  var PAYMENT_DESTINATARIO = "[COMPLETAR: nombre del titular de la cuenta]";
+  var PAYMENT_CUENTA = "[COMPLETAR: email de Zelle o número de cuenta]";
+  function paymentInstructionsHtml(montoTexto){
+    return '<div class="pay-instructions">' +
+      '<strong>Cómo pagar</strong>' +
+      '<div class="pay-row"><span>Método</span><span>' + PAYMENT_METODO + '</span></div>' +
+      '<div class="pay-row"><span>A nombre de</span><span>' + PAYMENT_DESTINATARIO + '</span></div>' +
+      '<div class="pay-row"><span>Cuenta / Email</span><span>' + PAYMENT_CUENTA + '</span></div>' +
+      (montoTexto ? '<div class="pay-row"><span>Monto</span><span>' + montoTexto + '</span></div>' : '') +
+      '<p class="hint">Después de pagar, reporta aquí la referencia — un administrador confirma la transacción manualmente.</p>' +
+    '</div>';
+  }
+
+  /* ---------- convertir archivo a base64 (para subir comprobantes/documentos) ---------- */
+  function fileToBase64(file){
+    return new Promise(function(resolve, reject){
+      var reader = new FileReader();
+      reader.onload = function(){
+        var result = reader.result || "";
+        var comma = result.indexOf(",");
+        resolve(comma >= 0 ? result.slice(comma + 1) : result);
+      };
+      reader.onerror = function(){ reject(new Error("No se pudo leer el archivo.")); };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  /* ---------- abrir un documento protegido (contrato, pagaré, cédula, etc.) ----------
+     Mismo arreglo que en el panel admin: la pestaña se abre EN EL CLIC
+     (antes del fetch) para que el bloqueador de pop-ups no la detenga. */
+  function abrirDocumentoProtegido(path, token){
+    if(!path){ toast("err", "Este documento no está disponible todavía."); return; }
+    var ventana = window.open("", "_blank");
+    if(ventana && ventana.document){
+      ventana.document.write("<title>Cargando documento…</title><body style=\"font-family:sans-serif;padding:40px;color:#555\">Cargando documento…</body>");
+    }
+    fetch(API_BASE + path, { headers: { "Authorization": "Bearer " + token } }).then(function(res){
+      if(!res.ok) throw new Error("status " + res.status);
+      return res.blob();
+    }).then(function(blob){
+      var url = URL.createObjectURL(blob);
+      if(ventana && !ventana.closed){ ventana.location = url; }
+      else {
+        var a = document.createElement("a");
+        a.href = url; a.download = "";
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      }
+      setTimeout(function(){ URL.revokeObjectURL(url); }, 30000);
+    }).catch(function(){
+      if(ventana && !ventana.closed){ try{ ventana.close(); }catch(e){} }
+      toast("err", "No se pudo abrir el documento.");
+    });
+  }
 
   /* ---------- theme ---------- */
   var root = document.documentElement;
@@ -849,7 +977,8 @@ footer{border-top:1px solid var(--border);padding-block:44px;}
       setLoading(formRegPrestamista, false);
       if(r.data && r.data.exito){
         showMsg(msgRegPrestamista, "ok",
-          "🎉 " + r.data.mensaje + "<br><br>Tu contraseña temporal es <code>" + r.data.claveTemporal + "</code> — guárdala. Tu cuenta se activa cuando confirmemos el pago de tu plan.");
+          "🎉 " + r.data.mensaje + "<br><br>Tu contraseña temporal es <code>" + r.data.claveTemporal + "</code> — guárdala. Tu cuenta se activa cuando confirmemos el pago de tu plan." +
+          paymentInstructionsHtml(""));
         formRegPrestamista.reset();
       } else {
         showMsg(msgRegPrestamista, "err", friendlyError(r.data));
@@ -937,9 +1066,16 @@ footer{border-top:1px solid var(--border);padding-block:44px;}
   }
 
   function renderDashboard(usuario, token){
+    resetInactivityTimer();
     formLogin.hidden = true;
     formCambiarClave.hidden = true;
     dashboardEl.hidden = false;
+
+    var esPrestamista = usuario.rol === "Prestamista";
+    var tabs = esPrestamista
+      ? [["oportunidades","Oportunidades"], ["mis-prestamos","Mis préstamos"]]
+      : [["mis-solicitudes","Mis solicitudes"], ["mis-cuotas","Mis cuotas"], ["mis-documentos","Mis documentos"]];
+
     dashboardEl.innerHTML =
       '<div class="dash-header">' +
         '<div class="dash-who">' +
@@ -948,9 +1084,15 @@ footer{border-top:1px solid var(--border);padding-block:44px;}
         '</div>' +
         '<button class="btn btn-ghost btn-sm" id="btnLogout">Cerrar sesión</button>' +
       '</div>' +
+      (esPrestamista && usuario.estatusSuscripcion !== "Activo" ?
+        '<div class="banner-pending"><strong>Tu suscripción todavía no está activa.</strong> Puedes ver el marketplace, pero no podrás ofertar hasta que el administrador confirme tu pago.</div>' +
+        paymentInstructionsHtml("")
+        : '') +
+      '<div id="subNav" class="subnav"></div>' +
       '<div id="dashBody"><div class="empty-state">Cargando tu información…</div></div>';
 
     document.getElementById("btnLogout").addEventListener("click", function(){
+      clearTimeout(inactivityTimer);
       try{ sessionStorage.removeItem("pv-token"); sessionStorage.removeItem("pv-user"); }catch(err){}
       dashboardEl.hidden = true;
       dashboardEl.innerHTML = "";
@@ -959,39 +1101,512 @@ footer{border-top:1px solid var(--border);padding-block:44px;}
     });
 
     var dashBody = document.getElementById("dashBody");
-    var path = usuario.rol === "Prestamista" ? "/marketplace/oportunidades" : "/marketplace/mis-solicitudes";
+    var subNav = document.getElementById("subNav");
+    var loadersDash = {
+      "oportunidades": function(){ renderOportunidades(dashBody, token, usuario); },
+      "mis-prestamos": function(){ renderMisPrestamos(dashBody, token, usuario); },
+      "mis-solicitudes": function(){ renderMisSolicitudes(dashBody, token, usuario); },
+      "mis-cuotas": function(){ renderMisCuotas(dashBody, token, usuario); },
+      "mis-documentos": function(){ renderMisDocumentos(dashBody, token, usuario); }
+    };
 
-    apiGet(path, token).then(function(r){
-      if(!(r.data && r.data.exito)){
-        dashBody.innerHTML = '<div class="empty-state">' + friendlyError(r.data) + '</div>';
-        return;
-      }
+    subNav.innerHTML = tabs.map(function(t, i){
+      return '<button class="btn btn-ghost btn-sm' + (i === 0 ? ' active' : '') + '" data-subview="' + t[0] + '">' + t[1] + '</button>';
+    }).join("");
+    subNav.querySelectorAll("[data-subview]").forEach(function(b){
+      b.addEventListener("click", function(){
+        subNav.querySelectorAll("[data-subview]").forEach(function(x){ x.classList.remove("active"); });
+        b.classList.add("active");
+        loadersDash[b.getAttribute("data-subview")]();
+      });
+    });
+    loadersDash[tabs[0][0]]();
+  }
+
+  /* ---------- prestamista: oportunidades abiertas ---------- */
+  function renderOportunidades(dashBody, token, usuario){
+    dashBody.innerHTML = '<div class="empty-state">Cargando…</div>';
+    apiGet("/marketplace/oportunidades", token).then(function(r){
+      if(!(r.data && r.data.exito)){ dashBody.innerHTML = '<div class="empty-state">' + friendlyError(r.data) + '</div>'; return; }
       var rows = r.data.datos || [];
-      if(rows.length === 0){
-        dashBody.innerHTML = '<div class="empty-state">' +
-          (usuario.rol === "Prestamista" ? "No hay solicitudes abiertas en tu país todavía." : "Todavía no tienes solicitudes publicadas.") +
-          '</div>';
-        return;
-      }
-      if(usuario.rol === "Prestamista"){
-        var html = '<div class="table-wrap"><table><thead><tr><th>Operación</th><th class="num">Monto</th><th class="num">Plazo</th><th class="num">Tasa</th><th>Garantía</th><th>Estatus</th></tr></thead><tbody>';
-        rows.forEach(function(o){
-          html += "<tr><td>" + o.idOp + "</td><td class=\"num\">" + money(o.montoSolicitado) + "</td><td class=\"num\">" + o.plazoMeses + " m</td><td class=\"num\">" + (o.interesAnual || 0) + "%</td><td>" + (o.tipoGarantia || "—") + "</td><td>" + statusChip(o.estatusPublicacion) + "</td></tr>";
+      if(rows.length === 0){ dashBody.innerHTML = '<div class="empty-state">No hay solicitudes abiertas en tu país todavía.</div>'; return; }
+      var html = '<div class="table-wrap"><table><thead><tr><th>Operación</th><th class="num">Monto</th><th class="num">Plazo</th><th class="num">Tasa</th><th>Garantía</th><th>Estatus</th><th>Acción</th></tr></thead><tbody>';
+      rows.forEach(function(o){
+        var accion = "—";
+        if(o.estatusPublicacion === "Abierta"){
+          accion = "<button class=\"btn btn-ghost btn-sm\" data-ofertar=\"" + o.idOp + "\">Hacer oferta</button>";
+        } else if(o.estatusPublicacion === "En Negociacion" || o.estatusPublicacion === "En_Negociacion"){
+          accion = "<span class=\"hint\">Esperando respuesta del prestatario</span>";
+        }
+        html += "<tr><td>" + o.idOp + "</td><td class=\"num\">" + money(o.montoSolicitado) + "</td><td class=\"num\">" + o.plazoMeses + " m</td><td class=\"num\">" + (o.interesAnual || 0) + "%</td><td>" + (o.tipoGarantia || "—") + "</td><td>" + statusChip(o.estatusPublicacion) + "</td><td>" + accion + "</td></tr>";
+      });
+      html += "</tbody></table></div>";
+      dashBody.innerHTML = html;
+      dashBody.querySelectorAll("[data-ofertar]").forEach(function(b){
+        b.addEventListener("click", function(){ abrirModalOferta(b.getAttribute("data-ofertar"), token, function(){ renderOportunidades(dashBody, token, usuario); }); });
+      });
+    }).catch(function(){ dashBody.innerHTML = '<div class="empty-state">No pudimos cargar tus datos. Intenta de nuevo en un momento.</div>'; });
+  }
+
+  /* ---------- prestamista: préstamos ya financiados ---------- */
+  function renderMisPrestamos(dashBody, token, usuario){
+    dashBody.innerHTML = '<div class="empty-state">Cargando…</div>';
+    apiGet("/marketplace/mis-prestamos", token).then(function(r){
+      if(!(r.data && r.data.exito)){ dashBody.innerHTML = '<div class="empty-state">' + friendlyError(r.data) + '</div>'; return; }
+      var rows = r.data.datos || [];
+      if(rows.length === 0){ dashBody.innerHTML = '<div class="empty-state">Todavía no has financiado ningún préstamo.</div>'; return; }
+      var html = '<div class="table-wrap"><table><thead><tr><th>Operación</th><th>Prestatario</th><th class="num">Monto</th><th class="num">Tasa</th><th class="num">Cuota</th><th>Estatus</th><th>Acciones</th></tr></thead><tbody>';
+      rows.forEach(function(o){
+        var botones = "<button class=\"btn btn-ghost btn-sm\" data-revisar=\"" + o.idOp + "\">Revisar documentos</button>";
+        if(o.estatus === "Financiada" || o.estatus === "Por_Desembolsar"){
+          botones += " <button class=\"btn btn-ghost btn-sm\" data-comision=\"" + o.idOp + "\" data-monto=\"" + (o.montoSolicitado * 0.05).toFixed(2) + "\">Reportar comisión</button>";
+        }
+        if(o.linkPdf){
+          botones += " <button class=\"btn btn-ghost btn-sm\" data-contrato=\"" + o.linkPdf + "\">Contrato</button>";
+        }
+        html += "<tr><td>" + o.idOp + "</td><td>" + (o.nombrePrestatario || "—") + "</td><td class=\"num\">" + money(o.montoSolicitado) + "</td><td class=\"num\">" + (o.tasaAnual || 0) + "%</td><td class=\"num\">" + money(o.cuotaMensual) + "</td><td>" + statusChip(o.estatus) + "</td><td class=\"row-actions\">" + botones + "</td></tr>";
+      });
+      html += "</tbody></table></div>";
+      dashBody.innerHTML = html;
+      dashBody.querySelectorAll("[data-revisar]").forEach(function(b){
+        b.addEventListener("click", function(){ abrirModalRevisarDocumentos(b.getAttribute("data-revisar"), token, function(){ renderMisPrestamos(dashBody, token, usuario); }); });
+      });
+      dashBody.querySelectorAll("[data-comision]").forEach(function(b){
+        b.addEventListener("click", function(){ abrirModalComision(b.getAttribute("data-comision"), b.getAttribute("data-monto"), token, function(){ renderMisPrestamos(dashBody, token, usuario); }); });
+      });
+      dashBody.querySelectorAll("[data-contrato]").forEach(function(b){
+        b.addEventListener("click", function(){ abrirDocumentoProtegido(b.getAttribute("data-contrato"), token); });
+      });
+    }).catch(function(){ dashBody.innerHTML = '<div class="empty-state">No pudimos cargar tus datos. Intenta de nuevo en un momento.</div>'; });
+  }
+
+  /* ---------- prestatario: mis solicitudes ---------- */
+  function renderMisSolicitudes(dashBody, token, usuario){
+    dashBody.innerHTML = '<div class="empty-state">Cargando…</div>';
+    apiGet("/marketplace/mis-solicitudes", token).then(function(r){
+      if(!(r.data && r.data.exito)){ dashBody.innerHTML = '<div class="empty-state">' + friendlyError(r.data) + '</div>'; return; }
+      var rows = r.data.datos || [];
+      if(rows.length === 0){ dashBody.innerHTML = '<div class="empty-state">Todavía no tienes solicitudes publicadas.</div>'; return; }
+      var html2 = '<div class="table-wrap"><table><thead><tr><th>Operación</th><th class="num">Monto</th><th class="num">Tasa</th><th class="num">Cuota</th><th class="num">Saldo</th><th>Estatus</th><th>Acción</th></tr></thead><tbody>';
+      rows.forEach(function(o){
+        var accion2 = "—";
+        if(o.estatusOp === "En Negociacion" || o.estatusOp === "En_Negociacion"){
+          accion2 = "<button class=\"btn btn-primary btn-sm\" data-responder=\"" + o.idOp + "\" data-tasa=\"" + (o.tasaAceptada || o.tasa || 0) + "\" data-monto=\"" + o.montoSolicitado + "\" data-plazo=\"" + o.plazoMeses + "\">Ver oferta</button>";
+        }
+        html2 += "<tr><td>" + o.idOp + "</td><td class=\"num\">" + money(o.montoSolicitado) + "</td><td class=\"num\">" + ((o.tasaAceptada || o.tasa) ? (o.tasaAceptada || o.tasa) + "%" : "—") + "</td><td class=\"num\">" + money(o.cuotaMensual) + "</td><td class=\"num\">" + money(o.saldoTotalPendiente) + "</td><td>" + statusChip(o.estatusOp) + "</td><td>" + accion2 + "</td></tr>";
+      });
+      html2 += "</tbody></table></div>";
+      dashBody.innerHTML = html2;
+      dashBody.querySelectorAll("[data-responder]").forEach(function(b){
+        b.addEventListener("click", function(){
+          abrirModalRespuesta({
+            idOp: b.getAttribute("data-responder"),
+            tasa: b.getAttribute("data-tasa"),
+            monto: b.getAttribute("data-monto"),
+            plazo: b.getAttribute("data-plazo")
+          }, token, function(){ renderMisSolicitudes(dashBody, token, usuario); });
         });
-        html += "</tbody></table></div>";
-        dashBody.innerHTML = html;
-      } else {
-        var html2 = '<div class="table-wrap"><table><thead><tr><th>Operación</th><th class="num">Monto</th><th class="num">Cuota</th><th class="num">Saldo</th><th>Estatus</th></tr></thead><tbody>';
-        rows.forEach(function(o){
-          html2 += "<tr><td>" + o.idOp + "</td><td class=\"num\">" + money(o.montoSolicitado) + "</td><td class=\"num\">" + money(o.cuotaMensual) + "</td><td class=\"num\">" + money(o.saldoTotalPendiente) + "</td><td>" + statusChip(o.estatusOp) + "</td></tr>";
-        });
-        html2 += "</tbody></table></div>";
-        dashBody.innerHTML = html2;
+      });
+    }).catch(function(){ dashBody.innerHTML = '<div class="empty-state">No pudimos cargar tus datos. Intenta de nuevo en un momento.</div>'; });
+  }
+
+  /* ---------- prestatario: mis cuotas ---------- */
+  function renderMisCuotas(dashBody, token, usuario){
+    dashBody.innerHTML = '<div class="empty-state">Cargando…</div>';
+    apiGet("/pagos/mis-cuotas", token).then(function(r){
+      if(!(r.data && r.data.exito)){ dashBody.innerHTML = '<div class="empty-state">' + friendlyError(r.data) + '</div>'; return; }
+      var rows = r.data.datos || [];
+      if(rows.length === 0){ dashBody.innerHTML = '<div class="empty-state">No tienes cuotas pendientes en este momento.</div>'; return; }
+      var html = '<div class="table-wrap"><table><thead><tr><th>Operación</th><th class="num">Cuota #</th><th class="num">Monto</th><th>Vence</th><th>Acción</th></tr></thead><tbody>';
+      rows.forEach(function(c){
+        html += "<tr><td>" + c.idOp + "</td><td class=\"num\">" + c.numCuota + "</td><td class=\"num\">" + money(c.montoCuota) + "</td><td>" + dateFmtSimple(c.fechaVenc) + "</td><td><button class=\"btn btn-primary btn-sm\" data-pagar=\"" + c.idPago + "\" data-monto=\"" + c.montoCuota + "\">Reportar pago</button></td></tr>";
+      });
+      html += "</tbody></table></div>";
+      dashBody.innerHTML = html;
+      dashBody.querySelectorAll("[data-pagar]").forEach(function(b){
+        b.addEventListener("click", function(){ abrirModalReportarCuota(b.getAttribute("data-pagar"), b.getAttribute("data-monto"), token, function(){ renderMisCuotas(dashBody, token, usuario); }); });
+      });
+    }).catch(function(){ dashBody.innerHTML = '<div class="empty-state">No pudimos cargar tus datos. Intenta de nuevo en un momento.</div>'; });
+  }
+  function dateFmtSimple(iso){
+    if(!iso) return "—";
+    var d = new Date(iso);
+    if(isNaN(d.getTime())) return "—";
+    return d.toLocaleDateString("es-DO", { year: "numeric", month: "short", day: "numeric" });
+  }
+
+  /* ---------- prestatario: mis documentos ---------- */
+  var ESTATUS_IA_LABEL = {
+    "Validado_IA": ["good", "Validado por IA"],
+    "Revision_Manual_IA": ["wait", "En revisión manual"],
+    "Pendiente_Revision_Manual": ["wait", "Pendiente de revisión"],
+    "Pendiente_Documento": ["wait", "Pendiente"]
+  };
+  function chipEstatusIA(estatus){
+    var def = ESTATUS_IA_LABEL[estatus] || ["wait", estatus || "—"];
+    return '<span class="status-chip ' + def[0] + '">' + def[1] + '</span>';
+  }
+  function renderMisDocumentos(dashBody, token, usuario){
+    dashBody.innerHTML = '<div class="empty-state">Cargando…</div>';
+    apiGet("/documentos/mis-documentos", token).then(function(r){
+      if(!(r.data && r.data.exito)){ dashBody.innerHTML = '<div class="empty-state">' + friendlyError(r.data) + '</div>'; return; }
+      var datos = r.data.datos || { identidad: [], bien: [] };
+      function listaHtml(items, vacio){
+        if(!items.length) return '<div class="empty-state">' + vacio + '</div>';
+        return '<div class="doc-list">' + items.map(function(it){
+          return '<div class="doc-item"><span>' + escapeHtmlPv(it.nombre || "Documento") + '</span>' + chipEstatusIA(it.estatusIA) + '</div>';
+        }).join("") + '</div>';
       }
-    }).catch(function(){
-      dashBody.innerHTML = '<div class="empty-state">No pudimos cargar tus datos. Intenta de nuevo en un momento.</div>';
+      dashBody.innerHTML =
+        '<h3 style="margin-bottom:10px;">Cédula o pasaporte</h3>' +
+        listaHtml(datos.identidad, "Todavía no has subido tu documento de identidad.") +
+        '<button class="btn btn-ghost btn-sm" id="btnSubirIdentidad">Subir cédula/pasaporte</button>' +
+        '<h3 style="margin:26px 0 10px;">Bien en garantía</h3>' +
+        listaHtml(datos.bien, "Todavía no has subido fotos del bien en garantía.") +
+        '<button class="btn btn-ghost btn-sm" id="btnSubirBien">Subir foto del bien</button>';
+      document.getElementById("btnSubirIdentidad").addEventListener("click", function(){
+        abrirModalSubirDocumento("identidad", token, function(){ renderMisDocumentos(dashBody, token, usuario); });
+      });
+      document.getElementById("btnSubirBien").addEventListener("click", function(){
+        abrirModalSubirDocumento("bien", token, function(){ renderMisDocumentos(dashBody, token, usuario); });
+      });
+    }).catch(function(){ dashBody.innerHTML = '<div class="empty-state">No pudimos cargar tus datos. Intenta de nuevo en un momento.</div>'; });
+  }
+  function escapeHtmlPv(s){
+    return (s || "").toString().replace(/[&<>"']/g, function(c){
+      return { "&":"&amp;", "<":"&lt;", ">":"&gt;", "\"":"&quot;", "'":"&#39;" }[c];
     });
   }
+
+  /* ---------- prestamista: hacer oferta (contraoferta) ---------- */
+  function abrirModalOferta(idOp, token, onDone){
+    openModal(
+      '<h3>Hacer una oferta</h3>' +
+      '<p class="modal-sub">Propón tu tasa de interés anual para la operación <strong>' + idOp + '</strong>. El prestatario podrá aceptarla o rechazarla.</p>' +
+      '<form id="formOferta">' +
+        '<label>Tasa de interés anual (%)<input type="number" name="nuevaTasa" min="0.1" max="30" step="0.1" placeholder="Ej: 18" required></label>' +
+        '<label>Tasa de mora diaria (%) <span class="hint">— opcional, 0.5% por defecto</span><input type="number" name="tasaMoraDiaria" min="0" max="5" step="0.1" placeholder="0.5"></label>' +
+        '<div id="msgOferta" class="form-msg"></div>' +
+        '<div class="modal-actions">' +
+          '<button type="button" class="btn btn-ghost" id="btnCancelarOferta">Cancelar</button>' +
+          '<button type="submit" class="btn btn-primary">Enviar oferta</button>' +
+        '</div>' +
+      '</form>'
+    );
+    document.getElementById("btnCancelarOferta").addEventListener("click", closeModal);
+    document.getElementById("formOferta").addEventListener("submit", function(e){
+      e.preventDefault();
+      var msg = document.getElementById("msgOferta");
+      msg.className = "form-msg"; msg.textContent = "";
+      var data = formToObject(e.target);
+      var submitBtn = e.target.querySelector("button[type=submit]");
+      submitBtn.disabled = true;
+      apiPostAuth("/marketplace/contraoferta", { idOp: idOp, nuevaTasa: data.nuevaTasa, tasaMoraDiaria: data.tasaMoraDiaria || 0.5 }, token).then(function(r){
+        submitBtn.disabled = false;
+        if(r.data && r.data.exito){
+          closeModal();
+          toast("ok", r.data.mensaje || "Oferta enviada.");
+          onDone();
+        } else {
+          msg.classList.add("show", "err");
+          msg.textContent = friendlyError(r.data);
+        }
+      }).catch(function(){
+        submitBtn.disabled = false;
+        msg.classList.add("show", "err");
+        msg.textContent = "No se pudo conectar. Intenta de nuevo.";
+      });
+    });
+  }
+
+  /* ---------- prestatario: aceptar / rechazar oferta ---------- */
+  function abrirModalRespuesta(op, token, onDone){
+    openModal(
+      '<h3>Oferta recibida</h3>' +
+      '<p class="modal-sub">Un prestamista propuso esta tasa para tu solicitud <strong>' + op.idOp + '</strong>. Revisa los términos antes de aceptar — aceptar genera tu contrato digital.</p>' +
+      '<div class="offer-summary">' +
+        '<div><span>Monto solicitado</span><span>' + money(op.monto) + '</span></div>' +
+        '<div><span>Plazo</span><span>' + op.plazo + ' meses</span></div>' +
+        '<div><span>Tasa anual propuesta</span><span>' + op.tasa + '%</span></div>' +
+      '</div>' +
+      '<form id="formRespuesta">' +
+        '<label>Firma digital (escribe tu nombre completo para firmar) <input type="text" name="firma" placeholder="Tu nombre completo" required></label>' +
+        '<div id="msgRespuesta" class="form-msg"></div>' +
+        '<div class="modal-actions">' +
+          '<button type="button" class="btn btn-ghost" id="btnRechazar">Rechazar</button>' +
+          '<button type="submit" class="btn btn-primary">Aceptar y firmar</button>' +
+        '</div>' +
+      '</form>'
+    );
+    var msg = document.getElementById("msgRespuesta");
+    function enviar(aceptada, firma){
+      msg.className = "form-msg"; msg.textContent = "";
+      apiPostAuth("/marketplace/responder", { idOp: op.idOp, aceptada: aceptada, firma: firma || undefined }, token).then(function(r){
+        if(r.data && r.data.exito){
+          closeModal();
+          toast("ok", r.data.mensaje || "Listo.");
+          onDone();
+        } else {
+          msg.classList.add("show", "err");
+          msg.textContent = friendlyError(r.data);
+        }
+      }).catch(function(){
+        msg.classList.add("show", "err");
+        msg.textContent = "No se pudo conectar. Intenta de nuevo.";
+      });
+    }
+    document.getElementById("btnRechazar").addEventListener("click", function(){
+      if(confirm("¿Seguro que quieres rechazar esta oferta? Tu solicitud volverá a estar abierta en el marketplace.")){
+        enviar(false, null);
+      }
+    });
+    document.getElementById("formRespuesta").addEventListener("submit", function(e){
+      e.preventDefault();
+      var firma = formToObject(e.target).firma;
+      enviar(true, firma);
+    });
+  }
+
+  /* ---------- prestatario: reportar pago de una cuota ---------- */
+  function abrirModalReportarCuota(idPago, montoSugerido, token, onDone){
+    openModal(
+      '<h3>Reportar pago de cuota</h3>' +
+      '<p class="modal-sub">Sube el comprobante de tu transferencia o pago y un administrador la validará.</p>' +
+      paymentInstructionsHtml(money(montoSugerido)) +
+      '<form id="formCuota">' +
+        '<label>Monto pagado (USD)<input type="number" name="montoPagado" min="0.01" step="0.01" value="' + montoSugerido + '" required></label>' +
+        '<label>Método de pago<select name="metodoPago"><option value="Zelle">Zelle</option><option value="Transferencia">Transferencia bancaria</option><option value="Efectivo">Efectivo</option><option value="Otro">Otro</option></select></label>' +
+        '<label>Referencia / número de confirmación<input type="text" name="referencia" placeholder="Opcional"></label>' +
+        '<label>Comprobante (foto o captura) <span class="hint">— opcional</span><input type="file" name="comprobante" accept="image/*,application/pdf"></label>' +
+        '<div id="msgCuota" class="form-msg"></div>' +
+        '<div class="modal-actions">' +
+          '<button type="button" class="btn btn-ghost" id="btnCancelarCuota">Cancelar</button>' +
+          '<button type="submit" class="btn btn-primary">Reportar pago</button>' +
+        '</div>' +
+      '</form>'
+    );
+    document.getElementById("btnCancelarCuota").addEventListener("click", closeModal);
+    document.getElementById("formCuota").addEventListener("submit", function(e){
+      e.preventDefault();
+      var msg = document.getElementById("msgCuota");
+      msg.className = "form-msg"; msg.textContent = "";
+      var data = formToObject(e.target);
+      var fileInput = e.target.querySelector("input[name=comprobante]");
+      var file = fileInput.files[0];
+      var submitBtn = e.target.querySelector("button[type=submit]");
+      submitBtn.disabled = true;
+
+      function enviarReporte(archivoBase64, archivoMimeType, archivoNombre){
+        apiPostAuth("/pagos/reportar", {
+          idPago: idPago, montoPagado: data.montoPagado, metodoPago: data.metodoPago, referencia: data.referencia,
+          archivoBase64: archivoBase64, archivoMimeType: archivoMimeType, archivoNombre: archivoNombre
+        }, token).then(function(r){
+          submitBtn.disabled = false;
+          if(r.data && r.data.exito){ closeModal(); toast("ok", r.data.mensaje || "Pago reportado."); onDone(); }
+          else { msg.classList.add("show","err"); msg.textContent = friendlyError(r.data); }
+        }).catch(function(){
+          submitBtn.disabled = false;
+          msg.classList.add("show","err"); msg.textContent = "No se pudo conectar. Intenta de nuevo.";
+        });
+      }
+      if(file){
+        fileToBase64(file).then(function(b64){ enviarReporte(b64, file.type, file.name); })
+          .catch(function(){ submitBtn.disabled = false; msg.classList.add("show","err"); msg.textContent = "No se pudo leer el archivo adjunto."; });
+      } else {
+        enviarReporte(null, null, null);
+      }
+    });
+  }
+
+  /* ---------- prestamista: reportar pago de la comisión del 5% ---------- */
+  function abrirModalComision(idOp, montoSugerido, token, onDone){
+    openModal(
+      '<h3>Reportar pago de comisión</h3>' +
+      '<p class="modal-sub">Comisión de plataforma (5%) sobre la operación <strong>' + idOp + '</strong>.</p>' +
+      paymentInstructionsHtml("$" + montoSugerido) +
+      '<form id="formComision">' +
+        '<label>Monto pagado (USD)<input type="number" name="montoPagado" min="0.01" step="0.01" value="' + montoSugerido + '" required></label>' +
+        '<label>Método de pago<select name="metodoPago"><option value="Zelle">Zelle</option><option value="Transferencia">Transferencia bancaria</option><option value="Efectivo">Efectivo</option><option value="Otro">Otro</option></select></label>' +
+        '<label>Referencia / número de confirmación<input type="text" name="referencia" placeholder="Opcional"></label>' +
+        '<label>Comprobante (foto o captura) <span class="hint">— opcional</span><input type="file" name="comprobante" accept="image/*,application/pdf"></label>' +
+        '<div id="msgComision" class="form-msg"></div>' +
+        '<div class="modal-actions">' +
+          '<button type="button" class="btn btn-ghost" id="btnCancelarComision">Cancelar</button>' +
+          '<button type="submit" class="btn btn-primary">Reportar pago</button>' +
+        '</div>' +
+      '</form>'
+    );
+    document.getElementById("btnCancelarComision").addEventListener("click", closeModal);
+    document.getElementById("formComision").addEventListener("submit", function(e){
+      e.preventDefault();
+      var msg = document.getElementById("msgComision");
+      msg.className = "form-msg"; msg.textContent = "";
+      var data = formToObject(e.target);
+      var fileInput = e.target.querySelector("input[name=comprobante]");
+      var file = fileInput.files[0];
+      var submitBtn = e.target.querySelector("button[type=submit]");
+      submitBtn.disabled = true;
+
+      function enviarReporte(archivoBase64, archivoMimeType, archivoNombre){
+        apiPostAuth("/pagos/comision/reportar", {
+          idOportunidad: idOp, montoPagado: data.montoPagado, metodoPago: data.metodoPago, referencia: data.referencia,
+          archivoBase64: archivoBase64, archivoMimeType: archivoMimeType, archivoNombre: archivoNombre
+        }, token).then(function(r){
+          submitBtn.disabled = false;
+          if(r.data && r.data.exito){ closeModal(); toast("ok", r.data.mensaje || "Comisión reportada."); onDone(); }
+          else { msg.classList.add("show","err"); msg.textContent = friendlyError(r.data); }
+        }).catch(function(){
+          submitBtn.disabled = false;
+          msg.classList.add("show","err"); msg.textContent = "No se pudo conectar. Intenta de nuevo.";
+        });
+      }
+      if(file){
+        fileToBase64(file).then(function(b64){ enviarReporte(b64, file.type, file.name); })
+          .catch(function(){ submitBtn.disabled = false; msg.classList.add("show","err"); msg.textContent = "No se pudo leer el archivo adjunto."; });
+      } else {
+        enviarReporte(null, null, null);
+      }
+    });
+  }
+
+  /* ---------- prestatario: subir documento (identidad o bien) ---------- */
+  function abrirModalSubirDocumento(tipo, token, onDone){
+    var esIdentidad = tipo === "identidad";
+    openModal(
+      '<h3>' + (esIdentidad ? "Subir cédula o pasaporte" : "Subir foto del bien en garantía") + '</h3>' +
+      '<p class="modal-sub">' + (esIdentidad ? "Una foto clara del documento, legible, sin reflejos." : "Fotos del bien que declaraste como garantía.") + '</p>' +
+      '<form id="formDoc">' +
+        '<label>Archivo<input type="file" name="archivo" accept="image/*,application/pdf" required></label>' +
+        '<div id="msgDoc" class="form-msg"></div>' +
+        '<div class="modal-actions">' +
+          '<button type="button" class="btn btn-ghost" id="btnCancelarDoc">Cancelar</button>' +
+          '<button type="submit" class="btn btn-primary">Subir</button>' +
+        '</div>' +
+      '</form>'
+    );
+    document.getElementById("btnCancelarDoc").addEventListener("click", closeModal);
+    document.getElementById("formDoc").addEventListener("submit", function(e){
+      e.preventDefault();
+      var msg = document.getElementById("msgDoc");
+      msg.className = "form-msg"; msg.textContent = "";
+      var file = e.target.querySelector("input[name=archivo]").files[0];
+      if(!file){ return; }
+      var submitBtn = e.target.querySelector("button[type=submit]");
+      submitBtn.disabled = true;
+      fileToBase64(file).then(function(b64){
+        return apiPostAuth(esIdentidad ? "/documentos/identidad" : "/documentos/bien", {
+          archivoBase64: b64, archivoMimeType: file.type, archivoNombre: file.name
+        }, token);
+      }).then(function(r){
+        submitBtn.disabled = false;
+        if(r.data && r.data.exito){ closeModal(); toast("ok", r.data.mensaje || "Documento subido."); onDone(); }
+        else { msg.classList.add("show","err"); msg.textContent = friendlyError(r.data); }
+      }).catch(function(){
+        submitBtn.disabled = false;
+        msg.classList.add("show","err"); msg.textContent = "No se pudo subir el archivo. Intenta de nuevo.";
+      });
+    });
+  }
+
+  /* ---------- prestamista: revisar y aprobar/rechazar documentos ---------- */
+  function abrirModalRevisarDocumentos(idOp, token, onDone){
+    openModal('<h3>Revisar documentos</h3><div class="empty-state">Cargando…</div>');
+    Promise.all([
+      apiGet("/documentos/aprobacion/" + idOp, token),
+      apiGet("/marketplace/documentos/" + idOp, token)
+    ]).then(function(res){
+      var aprobacion = res[0].data && res[0].data.exito ? res[0].data.datos : { estatus: "Pendiente" };
+      var docs = res[1].data && res[1].data.exito ? res[1].data.datos : { identidad: [], bien: [] };
+      var todos = (docs.identidad || []).concat(docs.bien || []);
+      var hayAlertaIA = todos.some(function(d){ return d.estatusIA === "Revision_Manual_IA"; });
+
+      function listaHtml(items, titulo, vacio){
+        var filas = items.length ? items.map(function(it){
+          return '<div class="doc-item"><button class="btn-ghost btn-sm" data-ver-doc="' + escapeHtmlPv(it.url) + '">' + escapeHtmlPv(it.nombre || "Ver") + '</button>' + chipEstatusIA(it.estatusIA) + '</div>';
+        }).join("") : '<div class="empty-state">' + vacio + '</div>';
+        return '<h3 style="margin:16px 0 8px;font-size:15px;">' + titulo + '</h3><div class="doc-list">' + filas + '</div>';
+      }
+
+      var yaDecidido = aprobacion.estatus === "Aprobado" || aprobacion.estatus === "Aprobado_Bajo_Responsabilidad" || aprobacion.estatus === "Rechazado";
+
+      openModal(
+        '<h3>Revisar documentos — ' + idOp + '</h3>' +
+        '<p class="modal-sub">Estatus actual: ' + statusChip(aprobacion.estatus) + '</p>' +
+        (hayAlertaIA ? '<div class="form-msg show err">⚠️ La IA marcó inconsistencias en al menos un documento (puede incluir que el país del documento no coincide con el país declarado). Revísalo con cuidado antes de aprobar.</div>' : '') +
+        listaHtml(docs.identidad || [], "Identidad", "El prestatario todavía no sube su documento de identidad.") +
+        listaHtml(docs.bien || [], "Bien en garantía", "El prestatario todavía no sube fotos del bien.") +
+        (yaDecidido ? '<p class="hint" style="margin-top:18px;">Ya se registró una decisión para esta operación' + (aprobacion.notas ? ": " + escapeHtmlPv(aprobacion.notas) : "") + '.</p>' :
+          '<form id="formAprobar" style="margin-top:18px;">' +
+            (hayAlertaIA ? '<label style="flex-direction:row;align-items:center;gap:8px;"><input type="checkbox" name="bajoResponsabilidad" style="width:auto;"> Apruebo bajo mi responsabilidad a pesar de la alerta de la IA</label>' : '') +
+            '<label>Notas (opcional)<textarea name="notas" rows="2" placeholder="Observaciones para el expediente"></textarea></label>' +
+            '<div id="msgAprobar" class="form-msg"></div>' +
+            '<div class="modal-actions">' +
+              '<button type="button" class="btn btn-ghost" id="btnRechazarDocs">Rechazar</button>' +
+              '<button type="submit" class="btn btn-primary">Aprobar y generar contrato</button>' +
+            '</div>' +
+          '</form>')
+      );
+
+      document.querySelectorAll("[data-ver-doc]").forEach(function(b){
+        b.addEventListener("click", function(){ abrirDocumentoProtegido(b.getAttribute("data-ver-doc"), token); });
+      });
+
+      if(!yaDecidido){
+        var msgAprobar = document.getElementById("msgAprobar");
+        function decidir(aprobado){
+          var bajoResponsabilidad = false;
+          var notas = "";
+          var form = document.getElementById("formAprobar");
+          if(form){
+            var fd = formToObject(form);
+            bajoResponsabilidad = !!fd.bajoResponsabilidad;
+            notas = fd.notas || "";
+          }
+          if(hayAlertaIA && aprobado && !bajoResponsabilidad){
+            msgAprobar.classList.add("show","err");
+            msgAprobar.textContent = "Marca la casilla de responsabilidad para aprobar a pesar de la alerta de la IA.";
+            return;
+          }
+          apiPostAuth("/documentos/aprobar", { idOp: idOp, aprobado: aprobado, bajoResponsabilidad: bajoResponsabilidad, notas: notas }, token).then(function(r){
+            if(r.data && r.data.exito){ closeModal(); toast("ok", r.data.mensaje || "Listo."); onDone(); }
+            else { msgAprobar.classList.add("show","err"); msgAprobar.textContent = friendlyError(r.data); }
+          }).catch(function(){
+            msgAprobar.classList.add("show","err"); msgAprobar.textContent = "No se pudo conectar. Intenta de nuevo.";
+          });
+        }
+        document.getElementById("btnRechazarDocs").addEventListener("click", function(){
+          if(confirm("¿Rechazar los documentos? El contrato no se generará hasta que el prestatario suba documentos nuevos.")) decidir(false);
+        });
+        document.getElementById("formAprobar").addEventListener("submit", function(e){ e.preventDefault(); decidir(true); });
+      }
+    }).catch(function(){
+      openModal('<h3>Revisar documentos</h3><div class="empty-state">No se pudo cargar la información. Intenta de nuevo.</div>');
+    });
+  }
+
+  /* ---------- cierre de sesión automático por inactividad (5 min) ---------- */
+  var INACTIVITY_LIMIT_MS = 5 * 60 * 1000;
+  var inactivityTimer = null;
+  function logoutPorInactividad(){
+    try{ sessionStorage.removeItem("pv-token"); sessionStorage.removeItem("pv-user"); }catch(err){}
+    closeModal();
+    dashboardEl.hidden = true;
+    dashboardEl.innerHTML = "";
+    formLogin.hidden = false;
+    formLogin.reset();
+    showTab("login");
+    toast("err", "Tu sesión se cerró automáticamente por inactividad (5 minutos).");
+  }
+  function resetInactivityTimer(){
+    var activa = false;
+    try{ activa = !!sessionStorage.getItem("pv-token"); }catch(err){}
+    if(!activa) return;
+    clearTimeout(inactivityTimer);
+    inactivityTimer = setTimeout(logoutPorInactividad, INACTIVITY_LIMIT_MS);
+  }
+  ["mousemove","keydown","click","scroll","touchstart"].forEach(function(evt){
+    document.addEventListener(evt, resetInactivityTimer, { passive: true });
+  });
 
   /* ---------- restore session ---------- */
   try{
