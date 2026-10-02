@@ -1368,29 +1368,73 @@ footer{border-top:1px solid var(--border);padding-block:44px;}
   }
   function renderMisDocumentos(dashBody, token, usuario){
     dashBody.innerHTML = '<div class="empty-state">Cargando…</div>';
-    apiGet("/documentos/mis-documentos", token).then(function(r){
-      if(!(r.data && r.data.exito)){ dashBody.innerHTML = '<div class="empty-state">' + friendlyError(r.data) + '</div>'; return; }
-      var datos = r.data.datos || { identidad: [], bien: [] };
+    // Antes esta pantalla traía SOLO /documentos/mis-documentos y pintaba
+    // una única lista de "Cédula" y una única lista de "Bien en garantía"
+    // con TODOS los documentos del prestatario juntos, sin importar a cuál
+    // solicitud pertenecía cada uno. Si el prestatario tenía 2+ solicitudes
+    // activas a la vez (con el mismo prestamista o con dos distintos), los
+    // documentos de una se veían mezclados con los de la otra, y no había
+    // forma de saber a cuál préstamo aceptado le faltaba qué. Ahora se
+    // agrupa por solicitud, usando la misma lista de operaciones activas
+    // que ya existía para el selector del modal de subida.
+    Promise.all([
+      apiGet("/documentos/mis-operaciones-activas", token),
+      apiGet("/documentos/mis-documentos", token)
+    ]).then(function(res){
+      var rOps = res[0], rDocs = res[1];
+      if(!(rOps.data && rOps.data.exito) || !(rDocs.data && rDocs.data.exito)){
+        dashBody.innerHTML = '<div class="empty-state">' + friendlyError((rOps.data && !rOps.data.exito) ? rOps.data : rDocs.data) + '</div>';
+        return;
+      }
+      var operaciones = rOps.data.datos || [];
+      var datos = rDocs.data.datos || { identidad: [], bien: [] };
+      var todos = (datos.identidad || []).concat(datos.bien || []);
+
       function listaHtml(items, vacio){
         if(!items.length) return '<div class="empty-state">' + vacio + '</div>';
         return '<div class="doc-list">' + items.map(function(it){
           return '<div class="doc-item"><span>' + escapeHtmlPv(it.nombre || "Documento") + '</span>' + chipEstatusIA(it.estatusIA) + '</div>';
         }).join("") + '</div>';
       }
-      dashBody.innerHTML =
-        '<h3 style="margin-bottom:10px;">Cédula o pasaporte</h3>' +
-        listaHtml(datos.identidad, "Todavía no has subido tu documento de identidad.") +
-        '<button class="btn btn-ghost btn-sm" id="btnSubirIdentidad">Subir cédula/pasaporte</button>' +
-        '<h3 style="margin:26px 0 10px;">Bien en garantía</h3>' +
-        listaHtml(datos.bien, "Todavía no has subido fotos del bien en garantía.") +
-        '<button class="btn btn-ghost btn-sm" id="btnSubirBien">Subir foto del bien</button>';
-      document.getElementById("btnSubirIdentidad").addEventListener("click", function(){
-        abrirModalSubirDocumento("identidad", token, function(){ renderMisDocumentos(dashBody, token, usuario); });
+
+      function bloqueOperacion(op){
+        var idOp = op ? op.idOp : null;
+        var deEstaOp = todos.filter(function(d){ return (d.idOportunidad || null) === idOp; });
+        var identidad = deEstaOp.filter(function(d){ return datos.identidad.indexOf(d) !== -1; });
+        var bien = deEstaOp.filter(function(d){ return datos.bien.indexOf(d) !== -1; });
+        var titulo = op ? ('Solicitud ' + escapeHtmlPv(op.idOp) + ' — ' + money(op.monto) + ' ' + statusChip(op.estatus))
+                         : 'Documentos sin solicitud asociada';
+        var idSufijo = idOp || "sin-op";
+        return (
+          '<div class="card" style="margin-bottom:18px;">' +
+            '<h3 style="margin-bottom:10px;">' + titulo + '</h3>' +
+            '<p class="hint" style="margin:0 0 10px;">Cédula o pasaporte</p>' +
+            listaHtml(identidad, "Todavía no has subido tu documento de identidad para esta solicitud.") +
+            '<button class="btn btn-ghost btn-sm" data-subir="identidad" data-idop="' + escapeHtmlPv(idOp || "") + '" style="margin-top:8px;">Subir cédula/pasaporte</button>' +
+            '<p class="hint" style="margin:16px 0 10px;">Bien en garantía</p>' +
+            listaHtml(bien, "Todavía no has subido fotos del bien en garantía para esta solicitud.") +
+            '<button class="btn btn-ghost btn-sm" data-subir="bien" data-idop="' + escapeHtmlPv(idOp || "") + '" style="margin-top:8px;">Subir foto del bien</button>' +
+          '</div>'
+        );
+      }
+
+      var html = "";
+      if(operaciones.length === 0){
+        html += '<div class="empty-state" style="margin-bottom:14px;">Todavía no tienes solicitudes activas. Puedes subir tus documentos de todos modos — quedarán listos para cuando un prestamista te acepte.</div>';
+      }
+      operaciones.forEach(function(op){ html += bloqueOperacion(op); });
+      var sinOp = todos.filter(function(d){ return !d.idOportunidad; });
+      if(sinOp.length > 0 || operaciones.length === 0) html += bloqueOperacion(null);
+
+      dashBody.innerHTML = html;
+      dashBody.querySelectorAll("[data-subir]").forEach(function(btn){
+        btn.addEventListener("click", function(){
+          var tipo = btn.getAttribute("data-subir");
+          var idOp = btn.getAttribute("data-idop") || null;
+          abrirModalSubirDocumento(tipo, token, function(){ renderMisDocumentos(dashBody, token, usuario); }, idOp);
+        });
       });
-      document.getElementById("btnSubirBien").addEventListener("click", function(){
-        abrirModalSubirDocumento("bien", token, function(){ renderMisDocumentos(dashBody, token, usuario); });
-      });
-    }).catch(function(){ dashBody.innerHTML = '<div class="empty-state">No pudimos cargar tus datos. Intenta de nuevo en un momento.</div>'; });
+    }).catch(function(){ dashBody.innerHTML = '<div class="empty-state">No pudimos cargar tus datos. Intenta de nuevo en un momento. Si el problema sigue, cierra sesión y vuelve a entrar.</div>'; });
   }
   function escapeHtmlPv(s){
     return (s || "").toString().replace(/[&<>"']/g, function(c){
@@ -1695,18 +1739,45 @@ footer{border-top:1px solid var(--border);padding-block:44px;}
   }
 
   /* ---------- prestatario: subir documento (identidad o bien) ---------- */
-  function abrirModalSubirDocumento(tipo, token, onDone){
+  // idOpPreseleccionada: cuando se abre desde el bloque de una solicitud
+  // específica (en "Mis documentos") ya sabemos a cuál pertenece el
+  // documento, así que subimos directo a esa operación sin preguntar ni
+  // depender de la llamada a /documentos/mis-operaciones-activas — esto
+  // también evita el error "No se pudo cargar tu información" cuando esa
+  // llamada falla, en el caso más común (ya se conoce la solicitud).
+  function abrirModalSubirDocumento(tipo, token, onDone, idOpPreseleccionada){
     var esIdentidad = tipo === "identidad";
+
+    if(idOpPreseleccionada){
+      return abrirFormularioSubirDocumento(tipo, token, onDone, false, [], idOpPreseleccionada);
+    }
+
     openModal('<h3>' + (esIdentidad ? "Subir cédula o pasaporte" : "Subir foto del bien en garantía") + '</h3><div class="empty-state">Cargando…</div>');
 
     apiGet("/documentos/mis-operaciones-activas", token).then(function(r){
-      var operaciones = (r.data && r.data.exito) ? (r.data.datos || []) : [];
+      if(!(r.data && r.data.exito)){
+        // La operación de red sí llegó, pero el backend reportó un error
+        // (token vencido, error de base de datos, etc.) — no lo tratamos
+        // como "no tiene solicitudes", se lo decimos tal cual.
+        closeModal();
+        toast("err", friendlyError(r.data));
+        return;
+      }
+      var operaciones = r.data.datos || [];
       // Si tiene 2+ solicitudes activas a la vez, no se puede adivinar a
       // cuál pertenece el documento — se le pide elegir, así nunca se
       // mezclan documentos entre dos préstamos/prestamistas distintos.
       var necesitaElegir = operaciones.length > 1;
+      abrirFormularioSubirDocumento(tipo, token, onDone, necesitaElegir, operaciones, null);
+    }).catch(function(){
+      closeModal();
+      toast("err", "No se pudo cargar tu información. Intenta de nuevo.");
+    });
+  }
 
-      openModal(
+  function abrirFormularioSubirDocumento(tipo, token, onDone, necesitaElegir, operaciones, idOpPreseleccionada){
+    var esIdentidad = tipo === "identidad";
+    openModal(
         '<h3>' + (esIdentidad ? "Subir cédula o pasaporte" : "Subir foto del bien en garantía") + '</h3>' +
         '<p class="modal-sub">' + (esIdentidad ? "Una foto clara del documento, legible, sin reflejos." : "Fotos del bien que declaraste como garantía.") + '</p>' +
         '<form id="formDoc">' +
@@ -1744,9 +1815,10 @@ footer{border-top:1px solid var(--border);padding-block:44px;}
         }
         var submitBtn = e.target.querySelector("button[type=submit]");
         submitBtn.disabled = true;
+        var idOpFinal = idOpPreseleccionada || data.idOportunidad || null;
         fileToBase64(file).then(function(b64){
           return apiPostAuth(esIdentidad ? "/documentos/identidad" : "/documentos/bien", {
-            archivoBase64: b64, archivoMimeType: file.type, archivoNombre: file.name, idOportunidad: data.idOportunidad || null
+            archivoBase64: b64, archivoMimeType: file.type, archivoNombre: file.name, idOportunidad: idOpFinal
           }, token);
         }).then(function(r){
           submitBtn.disabled = false;
@@ -1757,10 +1829,6 @@ footer{border-top:1px solid var(--border);padding-block:44px;}
           msg.classList.add("show","err"); msg.textContent = "No se pudo subir el archivo. Intenta de nuevo.";
         });
       });
-    }).catch(function(){
-      closeModal();
-      toast("err", "No se pudo cargar tu información. Intenta de nuevo.");
-    });
   }
 
   /* ---------- prestamista: revisar y aprobar/rechazar documentos ---------- */
