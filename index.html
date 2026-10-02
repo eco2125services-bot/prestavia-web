@@ -1216,6 +1216,9 @@ footer{border-top:1px solid var(--border);padding-block:44px;}
         if(o.linkPdf){
           botones += " <button class=\"btn btn-ghost btn-sm\" data-contrato=\"" + o.linkPdf + "\">Contrato</button>";
         }
+        if(o.linkFiniquito){
+          botones += " <button class=\"btn btn-primary btn-sm\" data-finiquito=\"" + o.linkFiniquito + "\">Finiquito</button>";
+        }
         html += "<tr><td>" + o.idOp + "</td><td>" + (o.nombrePrestatario || "—") + "</td><td class=\"num\">" + money(o.montoSolicitado) + "</td><td class=\"num\">" + (o.tasaAnual || 0) + "%</td><td class=\"num\">" + money(o.cuotaMensual) + "</td><td>" + statusChip(o.estatus) + "</td><td class=\"row-actions\">" + botones + "</td></tr>";
       });
       html += "</tbody></table></div>";
@@ -1229,6 +1232,9 @@ footer{border-top:1px solid var(--border);padding-block:44px;}
       dashBody.querySelectorAll("[data-contrato]").forEach(function(b){
         b.addEventListener("click", function(){ abrirDocumentoProtegido(b.getAttribute("data-contrato"), token); });
       });
+      dashBody.querySelectorAll("[data-finiquito]").forEach(function(b){
+        b.addEventListener("click", function(){ abrirDocumentoProtegido(b.getAttribute("data-finiquito"), token); });
+      });
     }).catch(function(){ dashBody.innerHTML = '<div class="empty-state">No pudimos cargar tus datos. Intenta de nuevo en un momento.</div>'; });
   }
 
@@ -1241,7 +1247,14 @@ footer{border-top:1px solid var(--border);padding-block:44px;}
       setBadgePv("mis-solicitudes", rows.filter(function(o){ return o.estatusOp === "En Negociacion" || o.estatusOp === "En_Negociacion" || o.estatusOp === "Financiada"; }).length);
       if(rows.length === 0){ dashBody.innerHTML = '<div class="empty-state">Todavía no tienes solicitudes publicadas.</div>'; return; }
       var hayFinanciadaSinDocs = rows.some(function(o){ return o.estatusOp === "Financiada"; });
-      var html2 = hayFinanciadaSinDocs ?
+      var prestamosActivos = rows.filter(function(o){
+        return ["Abierta","En Negociacion","En_Negociacion","Financiada","Por_Desembolsar","En_Cobro"].indexOf(o.estatusOp) !== -1;
+      }).length;
+      var html2 = '<div class="modal-actions" style="justify-content:flex-start;margin-bottom:14px;">' +
+          '<button class="btn btn-primary btn-sm" id="btnNuevaSolicitud"' + (prestamosActivos >= 3 ? ' disabled title="Ya tienes 3 préstamos activos — el máximo permitido"' : '') + '>+ Nueva solicitud</button>' +
+          '<span class="hint">' + prestamosActivos + "/3 préstamos activos</span>" +
+        '</div>';
+      html2 += hayFinanciadaSinDocs ?
         '<div class="banner-pending"><strong>Falta un paso.</strong> Aceptaste una oferta — ahora el prestamista necesita que subas tu <strong>cédula/pasaporte</strong> y <strong>fotos del bien en garantía</strong> para poder generar tu contrato. Ve a la pestaña "Mis documentos" arriba y súbelos.</div>' : '';
       html2 += '<div class="table-wrap"><table><thead><tr><th>Operación</th><th class="num">Monto</th><th class="num">Tasa</th><th class="num">Cuota</th><th class="num">Saldo</th><th>Estatus</th><th>Acción</th></tr></thead><tbody>';
       rows.forEach(function(o){
@@ -1250,6 +1263,8 @@ footer{border-top:1px solid var(--border);padding-block:44px;}
           accion2 = "<button class=\"btn btn-primary btn-sm\" data-responder=\"" + o.idOp + "\" data-tasa=\"" + (o.tasaAceptada || o.tasa || 0) + "\" data-monto=\"" + o.montoSolicitado + "\" data-plazo=\"" + o.plazoMeses + "\">Ver oferta</button>";
         } else if(o.estatusOp === "Financiada"){
           accion2 = "<span class=\"hint\">Falta subir documentos</span>";
+        } else if(o.estatusOp === "Pagada" && o.linkFiniquito){
+          accion2 = "<button class=\"btn btn-primary btn-sm\" data-finiquito=\"" + o.linkFiniquito + "\">Finiquito</button>";
         }
         html2 += "<tr><td>" + o.idOp + "</td><td class=\"num\">" + money(o.montoSolicitado) + "</td><td class=\"num\">" + ((o.tasaAceptada || o.tasa) ? (o.tasaAceptada || o.tasa) + "%" : "—") + "</td><td class=\"num\">" + money(o.cuotaMensual) + "</td><td class=\"num\">" + money(o.saldoTotalPendiente) + "</td><td>" + statusChip(o.estatusOp) + "</td><td>" + accion2 + "</td></tr>";
         if(o.solicitudDocumentos && o.solicitudDocumentos.mensaje){
@@ -1258,6 +1273,9 @@ footer{border-top:1px solid var(--border);padding-block:44px;}
       });
       html2 += "</tbody></table></div>";
       dashBody.innerHTML = html2;
+      document.getElementById("btnNuevaSolicitud").addEventListener("click", function(){
+        abrirModalNuevaSolicitud(token, function(){ renderMisSolicitudes(dashBody, token, usuario); });
+      });
       dashBody.querySelectorAll("[data-responder]").forEach(function(b){
         b.addEventListener("click", function(){
           abrirModalRespuesta({
@@ -1268,7 +1286,47 @@ footer{border-top:1px solid var(--border);padding-block:44px;}
           }, token, function(){ renderMisSolicitudes(dashBody, token, usuario); });
         });
       });
+      dashBody.querySelectorAll("[data-finiquito]").forEach(function(b){
+        b.addEventListener("click", function(){ abrirDocumentoProtegido(b.getAttribute("data-finiquito"), token); });
+      });
     }).catch(function(){ dashBody.innerHTML = '<div class="empty-state">No pudimos cargar tus datos. Intenta de nuevo en un momento.</div>'; });
+  }
+
+  /* ---------- prestatario: nueva solicitud de préstamo adicional ---------- */
+  function abrirModalNuevaSolicitud(token, onDone){
+    openModal(
+      '<h3>Nueva solicitud de préstamo</h3>' +
+      '<p class="modal-sub">Se publicará en el marketplace para que los prestamistas de tu país la vean. El interés lo define la negociación con el prestamista, no se fija aquí.</p>' +
+      '<form id="formNuevaSolicitud">' +
+        '<label>Monto solicitado (USD)<input type="number" name="montoSolicitado" min="1" step="0.01" required></label>' +
+        '<label>Plazo (meses)<input type="number" name="plazoMeses" min="1" step="1" value="12" required></label>' +
+        '<label>Tipo de garantía<input type="text" name="tipoGarantia" placeholder="Ej. Vehículo, joyas, electrónico…" required></label>' +
+        '<label>Descripción del bien<input type="text" name="descripcionGarantia" placeholder="Marca, modelo, características"></label>' +
+        '<label>Valor declarado del bien (USD)<input type="number" name="valorDeclarado" min="0" step="0.01" required></label>' +
+        '<div id="msgNuevaSolicitud" class="form-msg"></div>' +
+        '<div class="modal-actions">' +
+          '<button type="button" class="btn btn-ghost" id="btnCancelarNuevaSolicitud">Cancelar</button>' +
+          '<button type="submit" class="btn btn-primary">Publicar solicitud</button>' +
+        '</div>' +
+      '</form>'
+    );
+    document.getElementById("btnCancelarNuevaSolicitud").addEventListener("click", closeModal);
+    document.getElementById("formNuevaSolicitud").addEventListener("submit", function(e){
+      e.preventDefault();
+      var msg = document.getElementById("msgNuevaSolicitud");
+      msg.className = "form-msg"; msg.textContent = "";
+      var data = formToObject(e.target);
+      var submitBtn = e.target.querySelector("button[type=submit]");
+      submitBtn.disabled = true;
+      apiPostAuth("/registro/solicitud", data, token).then(function(r){
+        submitBtn.disabled = false;
+        if(r.data && r.data.exito){ closeModal(); toast("ok", r.data.mensaje || "Solicitud publicada."); onDone(); }
+        else { msg.classList.add("show","err"); msg.textContent = friendlyError(r.data); }
+      }).catch(function(){
+        submitBtn.disabled = false;
+        msg.classList.add("show","err"); msg.textContent = "No se pudo conectar. Intenta de nuevo.";
+      });
+    });
   }
 
   /* ---------- prestatario: mis cuotas ---------- */
