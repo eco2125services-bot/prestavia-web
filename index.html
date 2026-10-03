@@ -999,18 +999,23 @@ footer{border-top:1px solid var(--border);padding-block:44px;}
   var formCambiarClave = document.getElementById("form-cambiar-clave");
   var msgCambiarClave = document.getElementById("msg-cambiar-clave");
   var dashboardEl = document.getElementById("dashboard");
-  var pendingEmail = "";
+  // HALLAZGO DE SEGURIDAD (ALTO) corregido: /auth/actualizar-clave ahora
+  // exige el JWT de sesión (el backend ya lo valida con requiereAutenticacion
+  // y nunca confía en un email del body) — así que aquí guardamos el token
+  // que /auth/login YA entrega incluso cuando requiereCambioClave es true,
+  // en vez de descartarlo como se hacía antes.
+  var pendingToken = "";
 
   formLogin.addEventListener("submit", function(e){
     e.preventDefault();
     hideMsg(msgLogin);
     setLoading(formLogin, true);
     var payload = formToObject(formLogin);
-    pendingEmail = payload.email;
     apiCall("/auth/login", payload).then(function(r){
       setLoading(formLogin, false);
       if(r.data && r.data.exito){
         if(r.data.requiereCambioClave){
+          pendingToken = r.data.token;
           formLogin.hidden = true;
           formCambiarClave.hidden = false;
         } else {
@@ -1031,8 +1036,7 @@ footer{border-top:1px solid var(--border);padding-block:44px;}
     hideMsg(msgCambiarClave);
     setLoading(formCambiarClave, true);
     var payload = formToObject(formCambiarClave);
-    payload.email = pendingEmail;
-    apiCall("/auth/actualizar-clave", payload).then(function(r){
+    apiPostAuth("/auth/actualizar-clave", payload, pendingToken).then(function(r){
       setLoading(formCambiarClave, false);
       if(r.data && r.data.exito){
         showMsg(msgCambiarClave, "ok", "Contraseña actualizada. Inicia sesión de nuevo con tu nueva contraseña.");
@@ -1129,7 +1133,7 @@ footer{border-top:1px solid var(--border);padding-block:44px;}
       '<div class="dash-header">' +
         '<div class="dash-who">' +
           '<div class="avatar">' + initials(usuario.nombreLegal).toUpperCase() + '</div>' +
-          '<div><div class="name">' + (usuario.nombreLegal || "") + '</div><div class="role">' + (usuario.rol || "") + ' · ' + (usuario.estatusSuscripcion || "—") + '</div></div>' +
+          '<div><div class="name">' + escapeHtmlPv(usuario.nombreLegal || "") + '</div><div class="role">' + escapeHtmlPv(usuario.rol || "") + ' · ' + escapeHtmlPv(usuario.estatusSuscripcion || "—") + '</div></div>' +
         '</div>' +
         '<button class="btn btn-ghost btn-sm" id="btnLogout">Cerrar sesión</button>' +
       '</div>' +
@@ -1185,11 +1189,11 @@ footer{border-top:1px solid var(--border);padding-block:44px;}
       rows.forEach(function(o){
         var accion = "—";
         if(o.estatusPublicacion === "Abierta"){
-          accion = "<button class=\"btn btn-ghost btn-sm\" data-ofertar=\"" + o.idOp + "\">Hacer oferta</button>";
+          accion = "<button class=\"btn btn-ghost btn-sm\" data-ofertar=\"" + escapeHtmlPv(o.idOp) + "\">Hacer oferta</button>";
         } else if(o.estatusPublicacion === "En Negociacion" || o.estatusPublicacion === "En_Negociacion"){
           accion = "<span class=\"hint\">Esperando respuesta del prestatario</span>";
         }
-        html += "<tr><td>" + o.idOp + "</td><td class=\"num\">" + money(o.montoSolicitado) + "</td><td class=\"num\">" + o.plazoMeses + " m</td><td class=\"num\">" + (o.interesAnual || 0) + "%</td><td>" + (o.tipoGarantia || "—") + "</td><td>" + reputacionChip(o.puntosReputacion, o.prestamosExitosos) + "</td><td>" + statusChip(o.estatusPublicacion) + "</td><td>" + accion + "</td></tr>";
+        html += "<tr><td>" + escapeHtmlPv(o.idOp) + "</td><td class=\"num\">" + money(o.montoSolicitado) + "</td><td class=\"num\">" + o.plazoMeses + " m</td><td class=\"num\">" + (o.interesAnual || 0) + "%</td><td>" + escapeHtmlPv(o.tipoGarantia || "—") + "</td><td>" + reputacionChip(o.puntosReputacion, o.prestamosExitosos) + "</td><td>" + statusChip(o.estatusPublicacion) + "</td><td>" + accion + "</td></tr>";
       });
       html += "</tbody></table></div>";
       dashBody.innerHTML = html;
@@ -1209,17 +1213,17 @@ footer{border-top:1px solid var(--border);padding-block:44px;}
       if(rows.length === 0){ dashBody.innerHTML = '<div class="empty-state">Todavía no has financiado ningún préstamo.</div>'; return; }
       var html = '<div class="table-wrap"><table><thead><tr><th>Operación</th><th>Prestatario</th><th class="num">Monto</th><th class="num">Tasa</th><th class="num">Cuota</th><th>Estatus</th><th>Acciones</th></tr></thead><tbody>';
       rows.forEach(function(o){
-        var botones = "<button class=\"btn btn-ghost btn-sm\" data-revisar=\"" + o.idOp + "\">Revisar documentos</button>";
+        var botones = "<button class=\"btn btn-ghost btn-sm\" data-revisar=\"" + escapeHtmlPv(o.idOp) + "\">Revisar documentos</button>";
         if(o.estatus === "Financiada" || o.estatus === "Por_Desembolsar"){
-          botones += " <button class=\"btn btn-ghost btn-sm\" data-comision=\"" + o.idOp + "\" data-monto=\"" + (o.montoSolicitado * 0.05).toFixed(2) + "\">Reportar comisión</button>";
+          botones += " <button class=\"btn btn-ghost btn-sm\" data-comision=\"" + escapeHtmlPv(o.idOp) + "\" data-monto=\"" + escapeHtmlPv((o.montoSolicitado * 0.05).toFixed(2)) + "\">Reportar comisión</button>";
         }
         if(o.linkPdf){
-          botones += " <button class=\"btn btn-ghost btn-sm\" data-contrato=\"" + o.linkPdf + "\">Contrato</button>";
+          botones += " <button class=\"btn btn-ghost btn-sm\" data-contrato=\"" + escapeHtmlPv(o.linkPdf) + "\">Contrato</button>";
         }
         if(o.linkFiniquito){
-          botones += " <button class=\"btn btn-primary btn-sm\" data-finiquito=\"" + o.linkFiniquito + "\">Finiquito</button>";
+          botones += " <button class=\"btn btn-primary btn-sm\" data-finiquito=\"" + escapeHtmlPv(o.linkFiniquito) + "\">Finiquito</button>";
         }
-        html += "<tr><td>" + o.idOp + "</td><td>" + (o.nombrePrestatario || "—") + "</td><td class=\"num\">" + money(o.montoSolicitado) + "</td><td class=\"num\">" + (o.tasaAnual || 0) + "%</td><td class=\"num\">" + money(o.cuotaMensual) + "</td><td>" + statusChip(o.estatus) + "</td><td class=\"row-actions\">" + botones + "</td></tr>";
+        html += "<tr><td>" + escapeHtmlPv(o.idOp) + "</td><td>" + escapeHtmlPv(o.nombrePrestatario || "—") + "</td><td class=\"num\">" + money(o.montoSolicitado) + "</td><td class=\"num\">" + (o.tasaAnual || 0) + "%</td><td class=\"num\">" + money(o.cuotaMensual) + "</td><td>" + statusChip(o.estatus) + "</td><td class=\"row-actions\">" + botones + "</td></tr>";
       });
       html += "</tbody></table></div>";
       dashBody.innerHTML = html;
@@ -1260,13 +1264,13 @@ footer{border-top:1px solid var(--border);padding-block:44px;}
       rows.forEach(function(o){
         var accion2 = "—";
         if(o.estatusOp === "En Negociacion" || o.estatusOp === "En_Negociacion"){
-          accion2 = "<button class=\"btn btn-primary btn-sm\" data-responder=\"" + o.idOp + "\" data-tasa=\"" + (o.tasaAceptada || o.tasa || 0) + "\" data-monto=\"" + o.montoSolicitado + "\" data-plazo=\"" + o.plazoMeses + "\">Ver oferta</button>";
+          accion2 = "<button class=\"btn btn-primary btn-sm\" data-responder=\"" + escapeHtmlPv(o.idOp) + "\" data-tasa=\"" + escapeHtmlPv(o.tasaAceptada || o.tasa || 0) + "\" data-monto=\"" + escapeHtmlPv(o.montoSolicitado) + "\" data-plazo=\"" + escapeHtmlPv(o.plazoMeses) + "\">Ver oferta</button>";
         } else if(o.estatusOp === "Financiada"){
           accion2 = "<span class=\"hint\">Falta subir documentos</span>";
         } else if(o.estatusOp === "Pagada" && o.linkFiniquito){
-          accion2 = "<button class=\"btn btn-primary btn-sm\" data-finiquito=\"" + o.linkFiniquito + "\">Finiquito</button>";
+          accion2 = "<button class=\"btn btn-primary btn-sm\" data-finiquito=\"" + escapeHtmlPv(o.linkFiniquito) + "\">Finiquito</button>";
         }
-        html2 += "<tr><td>" + o.idOp + "</td><td class=\"num\">" + money(o.montoSolicitado) + "</td><td class=\"num\">" + ((o.tasaAceptada || o.tasa) ? (o.tasaAceptada || o.tasa) + "%" : "—") + "</td><td class=\"num\">" + money(o.cuotaMensual) + "</td><td class=\"num\">" + money(o.saldoTotalPendiente) + "</td><td>" + statusChip(o.estatusOp) + "</td><td>" + accion2 + "</td></tr>";
+        html2 += "<tr><td>" + escapeHtmlPv(o.idOp) + "</td><td class=\"num\">" + money(o.montoSolicitado) + "</td><td class=\"num\">" + ((o.tasaAceptada || o.tasa) ? (o.tasaAceptada || o.tasa) + "%" : "—") + "</td><td class=\"num\">" + money(o.cuotaMensual) + "</td><td class=\"num\">" + money(o.saldoTotalPendiente) + "</td><td>" + statusChip(o.estatusOp) + "</td><td>" + accion2 + "</td></tr>";
         if(o.solicitudDocumentos && o.solicitudDocumentos.mensaje){
           html2 += "<tr><td colspan=\"7\" style=\"padding:0;border:none;\"><div class=\"banner-pending\" style=\"margin:4px 0 10px;\"><strong>Operación " + escapeHtmlPv(o.idOp) + ":</strong> el prestamista te pidió documentos — \"" + escapeHtmlPv(o.solicitudDocumentos.mensaje) + "\". Ve a \"Mis documentos\" y súbelos indicando esta misma operación.</div></td></tr>";
         }
@@ -1339,7 +1343,7 @@ footer{border-top:1px solid var(--border);padding-block:44px;}
       if(rows.length === 0){ dashBody.innerHTML = '<div class="empty-state">No tienes cuotas pendientes en este momento.</div>'; return; }
       var html = '<div class="table-wrap"><table><thead><tr><th>Operación</th><th class="num">Cuota #</th><th class="num">Monto</th><th>Vence</th><th>Acción</th></tr></thead><tbody>';
       rows.forEach(function(c){
-        html += "<tr><td>" + c.idOp + "</td><td class=\"num\">" + c.numCuota + "</td><td class=\"num\">" + money(c.montoCuota) + "</td><td>" + dateFmtSimple(c.fechaVenc) + "</td><td><button class=\"btn btn-primary btn-sm\" data-pagar=\"" + c.idPago + "\" data-monto=\"" + c.montoCuota + "\" data-idop=\"" + escapeHtmlPv(c.idOp) + "\">Reportar pago</button></td></tr>";
+        html += "<tr><td>" + escapeHtmlPv(c.idOp) + "</td><td class=\"num\">" + escapeHtmlPv(c.numCuota) + "</td><td class=\"num\">" + money(c.montoCuota) + "</td><td>" + dateFmtSimple(c.fechaVenc) + "</td><td><button class=\"btn btn-primary btn-sm\" data-pagar=\"" + escapeHtmlPv(c.idPago) + "\" data-monto=\"" + escapeHtmlPv(c.montoCuota) + "\" data-idop=\"" + escapeHtmlPv(c.idOp) + "\">Reportar pago</button></td></tr>";
       });
       html += "</tbody></table></div>";
       dashBody.innerHTML = html;
@@ -1494,7 +1498,7 @@ footer{border-top:1px solid var(--border);padding-block:44px;}
         var msg = document.getElementById("msgClave");
         msg.className = "form-msg"; msg.textContent = "";
         var nuevaClave = formToObject(e.target).nuevaClave;
-        apiCall("/auth/actualizar-clave", { email: d.email, nuevaClave: nuevaClave }).then(function(r2){
+        apiPostAuth("/auth/actualizar-clave", { nuevaClave: nuevaClave }, token).then(function(r2){
           if(r2.data && r2.data.exito){
             msg.classList.add("show","ok"); msg.textContent = r2.data.mensaje || "Contraseña actualizada.";
             e.target.reset();
@@ -1854,7 +1858,7 @@ footer{border-top:1px solid var(--border);padding-block:44px;}
       var yaDecidido = aprobacion.estatus === "Aprobado" || aprobacion.estatus === "Aprobado_Bajo_Responsabilidad" || aprobacion.estatus === "Rechazado";
 
       openModal(
-        '<h3>Revisar documentos — ' + idOp + '</h3>' +
+        '<h3>Revisar documentos — ' + escapeHtmlPv(idOp) + '</h3>' +
         '<p class="modal-sub">Estatus actual: ' + statusChip(aprobacion.estatus) + '</p>' +
         (hayAlertaIA ? '<div class="form-msg show err">⚠️ La IA marcó inconsistencias en al menos un documento (puede incluir que el país del documento no coincide con el país declarado). Revísalo con cuidado antes de aprobar.</div>' : '') +
         (!yaDecidido && faltanDocumentos ? '<div class="form-msg show err">El prestatario todavía no sube todos los documentos — no puedes aprobar ni generar el contrato hasta que estén completos. Puedes pedírselos con el botón de abajo.</div>' : '') +
