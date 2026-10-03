@@ -958,8 +958,16 @@ footer{border-top:1px solid var(--border);padding-block:44px;}
     apiCall("/registro/prestatario", formToObject(formRegPrestatario)).then(function(r){
       setLoading(formRegPrestatario, false);
       if(r.data && r.data.exito){
-        showMsg(msgRegPrestatario, "ok",
-          "🎉 " + r.data.mensaje + "<br><br>Tu contraseña temporal es <code>" + r.data.claveTemporal + "</code> — guárdala, la necesitas para iniciar sesión (y te pedirá cambiarla).");
+        // Con la verificación de correo activada, la respuesta ya no trae
+        // claveTemporal — la cuenta se crea recién cuando la persona hace
+        // clic en el enlace que le llega por correo (ver registro.service.js).
+        // Si el correo del servidor todavía no está configurado, sigue
+        // llegando de inmediato como antes (modo de respaldo).
+        var msgExito = "🎉 " + escapeHtmlPv(r.data.mensaje);
+        if(r.data.claveTemporal){
+          msgExito += "<br><br>Tu contraseña temporal es <code>" + escapeHtmlPv(r.data.claveTemporal) + "</code> — guárdala, la necesitas para iniciar sesión (y te pedirá cambiarla).";
+        }
+        showMsg(msgRegPrestatario, "ok", msgExito);
         formRegPrestatario.reset();
       } else {
         showMsg(msgRegPrestatario, "err", friendlyError(r.data));
@@ -980,9 +988,11 @@ footer{border-top:1px solid var(--border);padding-block:44px;}
     apiCall("/registro/prestamista", formToObject(formRegPrestamista)).then(function(r){
       setLoading(formRegPrestamista, false);
       if(r.data && r.data.exito){
-        showMsg(msgRegPrestamista, "ok",
-          "🎉 " + r.data.mensaje + "<br><br>Tu contraseña temporal es <code>" + r.data.claveTemporal + "</code> — guárdala. Tu cuenta se activa cuando confirmemos el pago de tu plan." +
-          paymentInstructionsHtml(""));
+        var msgExito2 = "🎉 " + escapeHtmlPv(r.data.mensaje);
+        if(r.data.claveTemporal){
+          msgExito2 += "<br><br>Tu contraseña temporal es <code>" + escapeHtmlPv(r.data.claveTemporal) + "</code> — guárdala. Tu cuenta se activa cuando confirmemos el pago de tu plan." + paymentInstructionsHtml("");
+        }
+        showMsg(msgRegPrestamista, "ok", msgExito2);
         formRegPrestamista.reset();
       } else {
         showMsg(msgRegPrestamista, "err", friendlyError(r.data));
