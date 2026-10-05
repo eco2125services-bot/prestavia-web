@@ -1,0 +1,1981 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PrestaVía — Préstamos entre personas, respaldados por garantía</title>
+<meta name="description" content="Marketplace de préstamos peer-to-peer en República Dominicana y Panamá. Tasas de 0.1% a 30% anual, garantía real, contrato digital y comisión transparente del 5%.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Public+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   PrestaVía — sitio público
+   Concepto de layout: "libro de contabilidad" — secciones ordenadas
+   como asientos de un ledger, números siempre en mono tabular,
+   reglas finas en vez de sombras, un solo acento dorado que marca
+   la acción, verde esmeralda para señales de "sano/aprobado".
+   ============================================================ */
+:root{
+  --bg:#0B1F1A;
+  --bg-alt:#10281F;
+  --bg-raised:#142E24;
+  --fg:#EAF2EC;
+  --fg-muted:#9FB8AC;
+  --accent:#D9A441;
+  --accent-fg:#1B1206;
+  --accent-2:#2F9E7A;
+  --border:rgba(234,242,236,0.14);
+  --border-strong:rgba(234,242,236,0.26);
+  --danger:#E2725B;
+  --font-display:'Fraunces',Georgia,'Times New Roman',serif;
+  --font-body:'Public Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --font-mono:'IBM Plex Mono','SF Mono',Consolas,monospace;
+  color-scheme: dark;
+}
+:root[data-theme="light"]{
+  --bg:#F4F7F5;
+  --bg-alt:#FFFFFF;
+  --bg-raised:#FFFFFF;
+  --fg:#0F241D;
+  --fg-muted:#4B6459;
+  --accent:#A8721B;
+  --accent-fg:#FFF9EE;
+  --accent-2:#1F7A5C;
+  --border:rgba(15,36,29,0.12);
+  --border-strong:rgba(15,36,29,0.22);
+  --danger:#B23E27;
+  color-scheme: light;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--bg);
+  color:var(--fg);
+  font-family:var(--font-body);
+  font-size:16px;
+  line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+img{max-width:100%;}
+[hidden]{display:none!important;}
+a{color:inherit;}
+.wrap{max-width:1120px;margin:0 auto;padding-inline:20px;}
+h1,h2,h3{font-family:var(--font-display);font-weight:600;text-wrap:balance;margin:0;}
+.eyebrow{
+  font-family:var(--font-mono);
+  font-size:12.5px;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  color:var(--accent-2);
+  display:flex;align-items:center;gap:10px;
+}
+.eyebrow::before{content:"";width:22px;height:1px;background:var(--accent-2);display:inline-block;}
+.num{font-family:var(--font-mono);font-variant-numeric:tabular-nums;}
+::selection{background:var(--accent);color:var(--accent-fg);}
+
+/* ---------- header ---------- */
+header.site{
+  position:sticky;top:env(safe-area-inset-top,0px);z-index:40;
+  background:color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--border);
+}
+.nav{display:flex;align-items:center;justify-content:space-between;padding-block:16px;gap:16px;}
+.logo{display:flex;align-items:center;gap:10px;font-family:var(--font-display);font-weight:700;font-size:20px;letter-spacing:-.01em;}
+.logo-mark{width:30px;height:30px;border-radius:7px;background:linear-gradient(155deg,var(--accent-2),var(--accent));display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.logo-mark svg{width:16px;height:16px;}
+.nav-links{display:flex;align-items:center;gap:26px;font-size:14.5px;color:var(--fg-muted);}
+.nav-links a{text-decoration:none;}
+.nav-links a:hover{color:var(--fg);}
+.nav-actions{display:flex;align-items:center;gap:10px;}
+.nav-right{display:flex;align-items:center;gap:14px;flex-shrink:0;}
+@media (max-width:820px){.nav-links{display:none;}}
+@media (max-width:480px){
+  .nav-right{gap:8px;}
+  .nav-right .btn-ghost[data-open-auth="login"]{display:none;}
+  .logo{font-size:17px;}
+}
+
+button, .btn{
+  font-family:var(--font-body);
+  font-weight:700;
+  font-size:14.5px;
+  border-radius:8px;
+  border:1px solid transparent;
+  padding:11px 20px;
+  cursor:pointer;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  text-decoration:none;
+  transition:transform .12s ease, opacity .12s ease, background .12s ease, border-color .12s ease;
+  white-space:nowrap;
+}
+button:active,.btn:active{transform:translateY(1px);}
+button:focus-visible,.btn:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{
+  outline:2px solid var(--accent-2);outline-offset:2px;
+}
+.btn-primary{background:var(--accent);color:var(--accent-fg);}
+.btn-primary:hover{opacity:.92;}
+.btn-ghost{background:transparent;color:var(--fg);border-color:var(--border-strong);}
+.btn-ghost:hover{border-color:var(--accent-2);}
+.btn-sm{padding:8px 14px;font-size:13.5px;}
+.btn-block{width:100%;}
+.btn[disabled]{opacity:.55;cursor:not-allowed;}
+.icon-btn{background:transparent;border:1px solid var(--border-strong);width:38px;height:38px;padding:0;border-radius:8px;color:var(--fg);}
+
+/* ---------- hero ---------- */
+.hero{padding-block:72px 56px;position:relative;overflow:hidden;}
+.hero-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:56px;align-items:center;}
+.hero-grid > *{min-width:0;}
+@media (max-width:900px){.hero-grid{grid-template-columns:1fr;}}
+.hero h1{font-size:clamp(34px,5.4vw,54px);line-height:1.06;letter-spacing:-.01em;margin-top:16px;}
+.hero h1 em{font-style:italic;color:var(--accent-2);}
+.hero p.lede{font-size:18px;color:var(--fg-muted);max-width:46ch;margin-top:18px;}
+.hero-ctas{display:flex;gap:12px;flex-wrap:wrap;margin-top:30px;}
+.trust-row{display:flex;flex-wrap:wrap;gap:22px;margin-top:34px;padding-top:22px;border-top:1px solid var(--border);}
+.trust-item{font-size:13px;color:var(--fg-muted);display:flex;align-items:center;gap:8px;}
+.trust-item .num{color:var(--fg);font-weight:600;font-size:14px;}
+
+/* ledger card in hero */
+.ledger-card{
+  background:var(--bg-raised);
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:26px;
+  position:relative;
+}
+.ledger-card::before{
+  content:"";position:absolute;inset:10px 10px auto 10px;height:1px;
+  background:repeating-linear-gradient(90deg,var(--border-strong) 0 6px, transparent 6px 12px);
+  top:64px;
+}
+.ledger-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:34px;}
+.ledger-head .eyebrow::before{display:none;}
+.ledger-row{display:flex;justify-content:space-between;align-items:center;padding-block:13px;border-bottom:1px dashed var(--border);font-size:14.5px;}
+.ledger-row:last-of-type{border-bottom:none;}
+.ledger-row .label{color:var(--fg-muted);}
+.ledger-row .val{font-family:var(--font-mono);font-weight:600;}
+.ledger-row .val.good{color:var(--accent-2);}
+.ledger-card .cta-line{display:flex;justify-content:space-between;align-items:center;margin-top:24px;padding-top:20px;border-top:1px solid var(--border-strong);}
+.ledger-card .cta-line .total{font-family:var(--font-mono);font-size:22px;font-weight:600;}
+.pill{
+  font-family:var(--font-mono);font-size:11.5px;letter-spacing:.04em;
+  padding:3px 9px;border-radius:99px;border:1px solid var(--border-strong);color:var(--fg-muted);
+}
+.pill.on{color:var(--accent-2);border-color:var(--accent-2);background:color-mix(in srgb, var(--accent-2) 12%, transparent);}
+
+/* ---------- sections ---------- */
+section{padding-block:64px;}
+section.alt{background:var(--bg-alt);border-block:1px solid var(--border);}
+.section-head{max-width:640px;margin-bottom:44px;}
+.section-head h2{font-size:clamp(26px,3.4vw,36px);margin-top:14px;}
+.section-head p{color:var(--fg-muted);font-size:16px;margin-top:12px;}
+
+/* how it works */
+.tracks{display:flex;gap:10px;margin-bottom:32px;}
+.track-btn{
+  background:transparent;border:1px solid var(--border-strong);color:var(--fg-muted);
+  padding:9px 18px;border-radius:99px;font-size:14px;font-weight:600;
+}
+.track-btn.active{background:var(--fg);color:var(--bg);border-color:var(--fg);}
+:root[data-theme="light"] .track-btn.active{background:var(--fg);color:var(--bg-alt);}
+.steps{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;}
+@media (max-width:900px){.steps{grid-template-columns:repeat(2,1fr);}}
+@media (max-width:560px){.steps{grid-template-columns:1fr;}}
+.step{border:1px solid var(--border);border-radius:12px;padding:22px;background:var(--bg-raised);}
+.step .n{font-family:var(--font-mono);color:var(--accent);font-size:13px;font-weight:600;}
+.step h3{font-size:17px;margin-top:10px;font-weight:600;font-family:var(--font-body);}
+.step p{font-size:14px;color:var(--fg-muted);margin-top:8px;}
+
+/* features */
+.features{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:14px;overflow:hidden;}
+@media (max-width:800px){.features{grid-template-columns:1fr 1fr;}}
+@media (max-width:520px){.features{grid-template-columns:1fr;}}
+.feature{background:var(--bg-alt);padding:26px;}
+section:not(.alt) .feature{background:var(--bg);}
+.feature .ico{width:34px;height:34px;border-radius:8px;background:color-mix(in srgb, var(--accent-2) 16%, transparent);display:flex;align-items:center;justify-content:center;margin-bottom:14px;color:var(--accent-2);}
+.feature h3{font-size:15.5px;font-weight:700;font-family:var(--font-body);}
+.feature p{font-size:13.5px;color:var(--fg-muted);margin-top:6px;}
+
+/* rules table */
+.rules{border:1px solid var(--border);border-radius:14px;overflow:hidden;background:var(--bg-raised);}
+.rule-row{display:grid;grid-template-columns:1.3fr 1fr 1.7fr;gap:18px;padding:18px 22px;border-bottom:1px solid var(--border);align-items:center;}
+.rule-row:last-child{border-bottom:none;}
+.rule-row.head{background:color-mix(in srgb, var(--fg) 5%, transparent);font-family:var(--font-mono);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--fg-muted);}
+.rule-row .k{font-weight:700;font-size:14.5px;}
+.rule-row .v{font-family:var(--font-mono);font-weight:600;color:var(--accent-2);}
+.rule-row .d{font-size:13.5px;color:var(--fg-muted);}
+@media (max-width:700px){.rule-row{grid-template-columns:1fr;gap:4px;}.rule-row.head{display:none;}}
+
+/* auth panel */
+.auth-shell{border:1px solid var(--border);border-radius:16px;overflow:hidden;background:var(--bg-raised);}
+.auth-shell > *{min-width:0;}
+.auth-subtitle{font-size:18px;margin-top:14px;}
+.auth-subtext{color:var(--fg-muted);font-size:14.5px;margin-top:8px;max-width:62ch;}
+.auth-bullets{list-style:none;padding:0;margin:16px 0 0;display:flex;flex-wrap:wrap;gap:10px 28px;}
+.auth-bullets li{display:flex;gap:8px;font-size:13.5px;color:var(--fg-muted);align-items:flex-start;}
+.auth-bullets li svg{flex-shrink:0;margin-top:2px;color:var(--accent-2);}
+.auth-main{padding:34px;}
+.tabs{display:flex;gap:6px;margin-bottom:24px;border-bottom:1px solid var(--border);}
+.tab-btn{background:none;border:none;padding:10px 4px;margin-right:22px;font-size:14.5px;font-weight:700;color:var(--fg-muted);border-bottom:2px solid transparent;border-radius:0;}
+.tab-btn.active{color:var(--fg);border-bottom-color:var(--accent);}
+.panel{display:none;}
+.panel.active{display:block;}
+
+form{display:flex;flex-direction:column;gap:14px;}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.field-row > *{min-width:0;}
+@media (max-width:480px){.field-row{grid-template-columns:1fr;}}
+label{font-size:13px;font-weight:600;color:var(--fg-muted);display:flex;flex-direction:column;gap:6px;}
+input,select,textarea{
+  font-family:var(--font-body);font-size:14.5px;color:var(--fg);
+  background:var(--bg-alt);border:1px solid var(--border-strong);border-radius:8px;
+  padding:10px 12px;width:100%;
+}
+:root[data-theme="light"] input,:root[data-theme="light"] select,:root[data-theme="light"] textarea{background:var(--bg);}
+input::placeholder{color:var(--fg-muted);opacity:.7;}
+.hint{font-size:12px;color:var(--fg-muted);font-weight:400;}
+.form-msg{font-size:13.5px;padding:11px 13px;border-radius:8px;border:1px solid var(--border-strong);display:none;line-height:1.5;}
+.form-msg.show{display:block;}
+.form-msg.ok{border-color:var(--accent-2);background:color-mix(in srgb, var(--accent-2) 12%, transparent);color:var(--fg);}
+.form-msg.err{border-color:var(--danger);background:color-mix(in srgb, var(--danger) 12%, transparent);color:var(--fg);}
+.form-msg code{font-family:var(--font-mono);background:color-mix(in srgb, var(--fg) 10%, transparent);padding:2px 6px;border-radius:4px;}
+.spin{width:15px;height:15px;border-radius:50%;border:2px solid color-mix(in srgb, var(--accent-fg) 40%, transparent);border-top-color:var(--accent-fg);animation:spin .7s linear infinite;}
+.btn-ghost .spin{border:2px solid color-mix(in srgb, var(--fg) 30%, transparent);border-top-color:var(--fg);}
+@keyframes spin{to{transform:rotate(360deg);}}
+@media (prefers-reduced-motion: reduce){.spin{animation-duration:1.4s;}}
+
+/* dashboard */
+.dash-header{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px;margin-bottom:24px;}
+.dash-who{display:flex;align-items:center;gap:12px;}
+.avatar{width:42px;height:42px;border-radius:10px;background:linear-gradient(155deg,var(--accent-2),var(--accent));display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-weight:700;color:#1B1206;}
+.dash-who .name{font-weight:700;font-size:15px;}
+.dash-who .role{font-size:12.5px;color:var(--fg-muted);font-family:var(--font-mono);}
+.table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:12px;}
+table{width:100%;border-collapse:collapse;min-width:520px;}
+th,td{text-align:left;padding:11px 16px;font-size:13.5px;border-bottom:1px solid var(--border);}
+th{font-family:var(--font-mono);font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--fg-muted);background:color-mix(in srgb, var(--fg) 4%, transparent);}
+tr:last-child td{border-bottom:none;}
+td.num,th.num{font-family:var(--font-mono);}
+.status-chip{font-family:var(--font-mono);font-size:11px;padding:3px 8px;border-radius:99px;border:1px solid var(--border-strong);white-space:nowrap;}
+.status-chip.good{color:var(--accent-2);border-color:var(--accent-2);}
+.status-chip.wait{color:var(--accent);border-color:var(--accent);}
+.status-chip.bad{color:var(--danger);border-color:var(--danger);}
+.empty-state{padding:34px;text-align:center;color:var(--fg-muted);font-size:14px;}
+.row-actions{display:flex;gap:8px;flex-wrap:wrap;}
+.subnav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;}
+.subnav button.active{background:var(--accent);border-color:var(--accent);color:var(--accent-fg);}
+.subnav button{position:relative;}
+.subnav .badge{margin-left:6px;font-family:var(--font-mono);font-size:10.5px;background:var(--danger);color:#fff;border-radius:99px;padding:1px 7px;}
+.subnav button.active .badge{background:var(--accent-fg);color:var(--accent);}
+.pay-instructions{background:var(--bg-alt);border:1px solid var(--accent);border-radius:10px;padding:10px 14px;margin-top:4px;margin-bottom:4px;font-size:12.5px;}
+.pay-instructions strong{display:block;margin-bottom:5px;font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--accent);}
+.pay-row{display:flex;justify-content:space-between;gap:12px;padding-block:2px;}
+.pay-row span:last-child{font-family:var(--font-mono);font-weight:700;text-align:right;}
+.pay-instructions .hint{margin-top:6px;margin-bottom:0;}
+.banner-pending{background:color-mix(in srgb, var(--accent) 14%, transparent);border:1px solid var(--accent);border-radius:10px;padding:14px 16px;margin-bottom:20px;font-size:13.5px;line-height:1.5;}
+.doc-list{display:flex;flex-direction:column;gap:8px;margin-bottom:14px;}
+.doc-item{display:flex;flex-direction:column;align-items:flex-start;gap:6px;background:var(--bg-alt);border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;}
+.doc-item [data-ver-doc]{white-space:normal;word-break:break-word;text-align:left;max-width:100%;}
+.doc-item span{display:inline-block;}
+.file-drop{border:1px dashed var(--border-strong);border-radius:10px;padding:16px;text-align:center;font-size:13px;color:var(--fg-muted);}
+
+/* modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(5,12,9,.6);backdrop-filter:blur(2px);display:flex;align-items:center;justify-content:center;padding:20px;z-index:200;}
+.modal-box{background:var(--bg-raised);border:1px solid var(--border-strong);border-radius:14px;padding:24px;max-width:440px;width:100%;max-height:94vh;overflow:auto;}
+.modal-box h3{font-family:var(--font-display);font-size:20px;margin-bottom:6px;}
+.modal-box .modal-sub{color:var(--fg-muted);font-size:13.5px;margin-bottom:18px;line-height:1.5;}
+.modal-close{position:absolute;top:0;right:0;}
+.modal-actions{display:flex;gap:10px;margin-top:6px;flex-wrap:wrap;}
+.modal-actions .btn{flex:1;}
+.offer-summary{background:var(--bg-alt);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:18px;font-size:13.5px;display:flex;flex-direction:column;gap:6px;}
+.offer-summary div{display:flex;justify-content:space-between;gap:12px;}
+.offer-summary span:last-child{font-family:var(--font-mono);font-weight:700;}
+
+/* toast */
+#toastRoot{position:fixed;top:18px;right:18px;z-index:300;display:flex;flex-direction:column;gap:10px;max-width:340px;}
+.toast-item{background:var(--bg-raised);border:1px solid var(--border-strong);border-radius:10px;padding:13px 16px;font-size:13.5px;line-height:1.4;box-shadow:0 10px 30px rgba(0,0,0,.25);animation:toastIn .2s ease;}
+.toast-item.ok{border-color:var(--accent-2);}
+.toast-item.err{border-color:var(--danger);}
+@keyframes toastIn{from{opacity:0;transform:translateY(-8px);}to{opacity:1;transform:translateY(0);}}
+
+/* faq */
+.faq{max-width:760px;}
+details{border-bottom:1px solid var(--border);padding-block:16px;}
+details summary{cursor:pointer;font-weight:700;font-size:15.5px;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:12px;}
+details summary::-webkit-details-marker{display:none;}
+details summary::after{content:"+";font-family:var(--font-mono);font-size:20px;color:var(--fg-muted);flex-shrink:0;}
+details[open] summary::after{content:"–";}
+details p{color:var(--fg-muted);font-size:14.5px;margin-top:12px;margin-bottom:0;max-width:62ch;}
+
+/* footer */
+footer{border-top:1px solid var(--border);padding-block:44px;}
+.footer-grid{display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap;}
+.footer-brand p{color:var(--fg-muted);font-size:13.5px;max-width:34ch;margin-top:10px;}
+.footer-links{display:flex;gap:48px;flex-wrap:wrap;}
+.footer-col h4{font-family:var(--font-mono);font-size:11.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--fg-muted);margin-bottom:12px;}
+.footer-col a{display:block;font-size:14px;padding-block:5px;text-decoration:none;color:var(--fg);}
+.footer-col a:hover{color:var(--accent-2);}
+.footer-bottom{margin-top:36px;padding-top:20px;border-top:1px solid var(--border);display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;font-size:12.5px;color:var(--fg-muted);}
+.copy-email{background:none;border:none;color:var(--fg);text-decoration:underline;text-underline-offset:3px;cursor:pointer;font-size:inherit;font-family:inherit;padding:0;}
+
+/* cold-start banner */
+.cold-banner{
+  display:none;align-items:center;gap:10px;
+  background:color-mix(in srgb, var(--accent) 14%, var(--bg-alt));
+  border:1px solid var(--accent);border-radius:10px;padding:11px 14px;font-size:13px;margin-top:16px;
+}
+.cold-banner.show{display:flex;}
+</style>
+</head>
+<body>
+
+<header class="site">
+  <div class="wrap nav">
+    <a href="#top" class="logo">
+      <span class="logo-mark">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 13L10 7L14 11L20 5" stroke="#0B1F1A" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 5H20V11" stroke="#0B1F1A" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </span>
+      PrestaVía
+    </a>
+    <nav class="nav-links">
+      <a href="#como-funciona">Cómo funciona</a>
+      <a href="#reglas">Tasas y reglas</a>
+      <a href="#seguridad">Seguridad</a>
+      <a href="#preguntas">Preguntas</a>
+    </nav>
+    <div class="nav-right">
+      <button class="icon-btn" id="themeToggle" title="Cambiar tema" aria-label="Cambiar tema">
+        <svg id="themeIcon" width="17" height="17" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 3V5M12 19V21M5 12H3M21 12H19M18.4 18.4L17 17M18.4 5.6L17 7M5.6 18.4L7 17M5.6 5.6L7 7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="12" r="4.2" stroke="currentColor" stroke-width="1.8"/></svg>
+      </button>
+      <button class="btn btn-ghost btn-sm" data-open-auth="login">Iniciar sesión</button>
+      <button class="btn btn-primary btn-sm" data-open-auth="registro">Regístrate</button>
+    </div>
+  </div>
+</header>
+
+<main id="top">
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="wrap hero-grid">
+      <div>
+        <div class="eyebrow">República Dominicana &amp; Panamá</div>
+        <h1>Préstamos entre personas,<br><em>respaldados por algo real.</em></h1>
+        <p class="lede">PrestaVía conecta a quien tiene capital con quien necesita financiamiento — cada préstamo va respaldado por una garantía, con contrato digital y reglas fijas desde el primer día.</p>
+        <div class="hero-ctas">
+          <button class="btn btn-primary" data-open-auth="registro" data-role="prestamista">Quiero prestar capital</button>
+          <button class="btn btn-ghost" data-open-auth="registro" data-role="prestatario">Necesito financiamiento</button>
+        </div>
+        <div class="trust-row">
+          <div class="trust-item"><span class="num">5%</span> comisión de plataforma, la paga el prestamista</div>
+          <div class="trust-item"><span class="num">0.1–30%</span> tasa anual, la negocian las partes</div>
+          <div class="trust-item"><span class="num">3</span> préstamos activos máximo por prestatario</div>
+        </div>
+      </div>
+
+      <div class="ledger-card">
+        <div class="ledger-head">
+          <div>
+            <div class="eyebrow">Simulación de préstamo</div>
+            <div style="font-family:var(--font-display);font-size:19px;margin-top:8px;">Solicitud OP-2026</div>
+          </div>
+          <span class="pill on">Abierta</span>
+        </div>
+        <div class="ledger-row"><span class="label">Monto solicitado</span><span class="val">$3,000.00</span></div>
+        <div class="ledger-row"><span class="label">Plazo</span><span class="val">12 meses</span></div>
+        <div class="ledger-row"><span class="label">Garantía declarada</span><span class="val">Vehículo — $4,200</span></div>
+        <div class="ledger-row"><span class="label">LTV preliminar</span><span class="val good">71.4%</span></div>
+        <div class="ledger-row"><span class="label">Comisión de plataforma (5%)</span><span class="val">$150.00</span></div>
+        <div class="cta-line">
+          <span class="hint">Cuota mensual estimada</span>
+          <span class="total">$267.94<span style="font-size:13px;color:var(--fg-muted);font-weight:400;">/mes</span></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- COMO FUNCIONA -->
+  <section id="como-funciona" class="alt">
+    <div class="wrap">
+      <div class="section-head">
+        <div class="eyebrow">El proceso</div>
+        <h2>De la solicitud al desembolso, en pasos claros</h2>
+        <p>El mismo camino, visto desde los dos lados de la mesa. Cambia la pestaña para ver tu recorrido.</p>
+      </div>
+
+      <div class="tracks">
+        <button class="track-btn active" data-track="prestatario">Soy prestatario</button>
+        <button class="track-btn" data-track="prestamista">Soy prestamista</button>
+      </div>
+
+      <div class="steps" id="steps-prestatario">
+        <div class="step"><div class="n">01</div><h3>Publica tu solicitud</h3><p>Indica el monto, el plazo y el bien que ofreces como garantía. Queda visible de inmediato en el marketplace.</p></div>
+        <div class="step"><div class="n">02</div><h3>Recibe contraofertas</h3><p>Los prestamistas de tu país revisan tu solicitud y proponen una tasa, entre 0.1% y 30% anual.</p></div>
+        <div class="step"><div class="n">03</div><h3>Acepta y firma</h3><p>Eliges la oferta que más te conviene. El contrato y el pagaré se generan al instante, con hash de integridad.</p></div>
+        <div class="step"><div class="n">04</div><h3>Recibe el desembolso</h3><p>Una vez validado el pago de comisión del prestamista, tu préstamo pasa a cobro y comienzas a pagar tus cuotas.</p></div>
+      </div>
+
+      <div class="steps" id="steps-prestamista" hidden>
+        <div class="step"><div class="n">01</div><h3>Activa tu cuenta</h3><p>Regístrate y confirma tu plan (mensual o anual). Tu acceso se activa al confirmar el pago de suscripción.</p></div>
+        <div class="step"><div class="n">02</div><h3>Explora solicitudes</h3><p>Ve las solicitudes abiertas de tu país, cada una con su garantía, LTV y evaluación de riesgo ya calculada.</p></div>
+        <div class="step"><div class="n">03</div><h3>Contraoferta tu tasa</h3><p>Propón la tasa anual a la que estás dispuesto a prestar. El prestatario decide si la acepta.</p></div>
+        <div class="step"><div class="n">04</div><h3>Cobra tus cuotas</h3><p>Sigue el calendario de pagos desde tu panel y recibe tu capital más intereses mes a mes.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section id="seguridad">
+    <div class="wrap">
+      <div class="section-head">
+        <div class="eyebrow">Por qué confiar</div>
+        <h2>Cada préstamo queda documentado y respaldado</h2>
+      </div>
+      <div class="features">
+        <div class="feature">
+          <div class="ico"><svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M12 2L4 6V11C4 16 7.5 20.5 12 22C16.5 20.5 20 16 20 11V6L12 2Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></div>
+          <h3>Garantía real</h3>
+          <p>Todo préstamo va respaldado por un bien declarado y evaluado — sin garantía no hay publicación.</p>
+        </div>
+        <div class="feature">
+          <div class="ico"><svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M9 12L11 14L15 10M12 3L20 6.5V11C20 15.5 16.5 20 12 21.5C7.5 20 4 15.5 4 11V6.5L12 3Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></div>
+          <h3>Contrato digital verificable</h3>
+          <p>Cada contrato queda firmado con un hash SHA-256, con pagaré generado automáticamente en PDF.</p>
+        </div>
+        <div class="feature">
+          <div class="ico"><svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M4 19H20M6 19V10M10 19V6M14 19V13M18 19V8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></div>
+          <h3>Evaluación de riesgo automática</h3>
+          <p>Cada garantía se avalúa al momento de publicarse (LTV, calificación de riesgo) antes de mostrarse a prestamistas.</p>
+        </div>
+        <div class="feature">
+          <div class="ico"><svg width="17" height="17" viewBox="0 0 24 24" fill="none"><rect x="4" y="10" width="16" height="10" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M8 10V7A4 4 0 0116 7V10" stroke="currentColor" stroke-width="1.8"/></svg></div>
+          <h3>Contraseñas cifradas</h3>
+          <p>Nunca guardamos contraseñas en texto plano — se cifran de inmediato y las sesiones usan tokens firmados.</p>
+        </div>
+        <div class="feature">
+          <div class="ico"><svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M12 8V13L15.5 15.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/></svg></div>
+          <h3>Mora con reglas claras</h3>
+          <p>Toda cuota tiene 3 días de gracia; después, la mora y su interés se calculan con la tasa que fijó el prestamista.</p>
+        </div>
+        <div class="feature">
+          <div class="ico"><svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M12 21C12 21 5 16 5 10.5C5 7 7.5 4.5 11 4.5C11.8 4.5 12 5 12 5C12 5 12.2 4.5 13 4.5C16.5 4.5 19 7 19 10.5C19 16 12 21 12 21Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></div>
+          <h3>Reputación que se construye</h3>
+          <p>Cada préstamo pagado a tiempo suma puntos de reputación — cada mora los resta.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- RULES -->
+  <section id="reglas" class="alt">
+    <div class="wrap">
+      <div class="section-head">
+        <div class="eyebrow">Sin letra pequeña</div>
+        <h2>Las reglas, desde el primer día</h2>
+        <p>Esto no cambia según con quién negocies — son las mismas condiciones para todos en la plataforma.</p>
+      </div>
+      <div class="rules">
+        <div class="rule-row head"><span>Regla</span><span>Valor</span><span>Qué significa</span></div>
+        <div class="rule-row"><span class="k">Comisión de plataforma</span><span class="v">5%</span><span class="d">Se cobra al prestamista sobre el monto financiado, no al prestatario.</span></div>
+        <div class="rule-row"><span class="k">Rango de tasa anual</span><span class="v">0.1% – 30%</span><span class="d">La negocian libremente prestamista y prestatario, dentro de este rango.</span></div>
+        <div class="rule-row"><span class="k">Préstamos activos por prestatario</span><span class="v">Máx. 3</span><span class="d">Evita el sobreendeudamiento simultáneo de una misma persona.</span></div>
+        <div class="rule-row"><span class="k">Días de gracia por cuota</span><span class="v">3 días</span><span class="d">Después de la fecha de vencimiento, antes de entrar en mora.</span></div>
+        <div class="rule-row"><span class="k">Países habilitados</span><span class="v">RD · Panamá</span><span class="d">Prestamista y prestatario deben residir en el mismo país.</span></div>
+        <div class="rule-row"><span class="k">Plan de prestamista</span><span class="v">Mensual / Anual</span><span class="d">Suscripción para poder ofertar en el marketplace — se activa tras confirmar el pago.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- AUTH -->
+  <section id="acceso">
+    <div class="wrap">
+      <div class="section-head">
+        <div class="eyebrow" id="authEyebrow">Empieza ahora</div>
+        <h2 id="authHeading">Crea tu cuenta o inicia sesión</h2>
+        <h3 id="authSideTitle" class="auth-subtitle">Tu dinero, con reglas claras</h3>
+        <p id="authSideText" class="auth-subtext">Regístrate como prestamista para ofertar en solicitudes abiertas, o como prestatario para publicar la tuya en minutos.</p>
+        <ul id="authSideList" class="auth-bullets">
+          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M5 13L9 17L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg> Sin costo por explorar solicitudes abiertas</li>
+          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M5 13L9 17L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg> Contrato y pagaré generados automáticamente</li>
+          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M5 13L9 17L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg> Panel propio para seguir cada préstamo</li>
+        </ul>
+      </div>
+
+      <div class="auth-shell">
+        <div class="auth-main">
+          <div class="tabs">
+            <button class="tab-btn active" data-tab="registro">Registrarme</button>
+            <button class="tab-btn" data-tab="login">Iniciar sesión</button>
+          </div>
+
+          <!-- REGISTRO -->
+          <div class="panel active" id="panel-registro">
+            <div class="tabs" style="margin-bottom:20px;">
+              <button class="tab-btn active" data-subtab="reg-prestatario" style="margin-right:16px;">Como prestatario</button>
+              <button class="tab-btn" data-subtab="reg-prestamista">Como prestamista</button>
+            </div>
+
+            <form id="form-reg-prestatario" class="panel active" data-panel="reg-prestatario">
+              <div class="field-row">
+                <label>Nombre completo<input type="text" name="nombre" required placeholder="Ej. Ana Martínez"></label>
+                <label>Correo electrónico<input type="email" name="email" required placeholder="tucorreo@email.com"></label>
+              </div>
+              <div class="field-row">
+                <label>Teléfono<input type="tel" name="telefono" placeholder="809-000-0000"></label>
+                <label>País de residencia
+                  <select name="paisResidencia" required>
+                    <option value="República Dominicana">República Dominicana</option>
+                    <option value="Panamá">Panamá</option>
+                  </select>
+                </label>
+              </div>
+              <div class="field-row">
+                <label>Cédula o pasaporte<input type="text" name="cedula" placeholder="000-0000000-0"></label>
+                <label>Monto solicitado (USD)<input type="number" name="monto" min="1" step="0.01" required placeholder="1500"></label>
+              </div>
+              <div class="field-row">
+                <label>Plazo (meses)<input type="number" name="plazo" min="1" max="60" value="12" required></label>
+                <label>Tipo de garantía<input type="text" name="tipoGarantia" required placeholder="Ej. Vehículo, joya, electrónico"></label>
+              </div>
+              <div class="field-row">
+                <label>Valor estimado de la garantía (USD)<input type="number" name="valorGarantia" min="0" step="0.01" placeholder="2200"></label>
+                <label>Descripción de la garantía<input type="text" name="descripcionGarantia" placeholder="Ej. Toyota Corolla 2019"></label>
+              </div>
+              <div class="form-msg" id="msg-reg-prestatario"></div>
+              <button type="submit" class="btn btn-primary btn-block">
+                <span class="btn-label">Publicar mi solicitud</span>
+              </button>
+              <p class="hint" style="text-align:center;">Por ahora, disponible solo para residentes de República Dominicana y Panamá.</p>
+            </form>
+
+            <form id="form-reg-prestamista" class="panel" data-panel="reg-prestamista">
+              <div class="field-row">
+                <label>Nombre completo<input type="text" name="nombre" required placeholder="Ej. Carlos Peña"></label>
+                <label>Correo electrónico<input type="email" name="email" required placeholder="tucorreo@email.com"></label>
+              </div>
+              <div class="field-row">
+                <label>Teléfono<input type="tel" name="telefono" placeholder="809-000-0000"></label>
+                <label>País de residencia
+                  <select name="paisResidencia" required>
+                    <option value="República Dominicana">República Dominicana</option>
+                    <option value="Panamá">Panamá</option>
+                  </select>
+                </label>
+              </div>
+              <div class="field-row">
+                <label>Cédula o pasaporte<input type="text" name="cedula" placeholder="000-0000000-0"></label>
+                <label>RIF / RNC (opcional)<input type="text" name="rif" placeholder="Si aplica"></label>
+              </div>
+              <label>Dirección<input type="text" name="direccion" placeholder="Calle, número, ciudad"></label>
+              <label>Plan de suscripción
+                <select name="planSuscripcion">
+                  <option value="mensual">Mensual — $20/mes</option>
+                  <option value="anual">Anual — $200/año</option>
+                </select>
+                <span class="hint">Tu acceso se activa cuando confirmes el pago con el equipo de PrestaVía.</span>
+              </label>
+              <div class="form-msg" id="msg-reg-prestamista"></div>
+              <button type="submit" class="btn btn-primary btn-block">
+                <span class="btn-label">Crear cuenta de prestamista</span>
+              </button>
+            </form>
+          </div>
+
+          <!-- LOGIN -->
+          <div class="panel" id="panel-login">
+            <form id="form-login">
+              <label>Correo electrónico<input type="email" name="email" required placeholder="tucorreo@email.com"></label>
+              <label>Contraseña<input type="password" name="clave" required placeholder="••••••••"></label>
+              <div class="form-msg" id="msg-login"></div>
+              <button type="submit" class="btn btn-primary btn-block">
+                <span class="btn-label">Entrar</span>
+              </button>
+            </form>
+
+            <form id="form-cambiar-clave" hidden style="margin-top:6px;">
+              <div class="form-msg show ok" style="margin-bottom:4px;">Tu contraseña es temporal. Elige una nueva para continuar.</div>
+              <label>Nueva contraseña<input type="password" name="nuevaClave" required minlength="8" pattern="(?=.*[A-Za-z])(?=.*[0-9]).{8,}" title="Mínimo 8 caracteres, con al menos una letra y un número" placeholder="Mínimo 8 caracteres, con letra y número"></label>
+              <div class="form-msg" id="msg-cambiar-clave"></div>
+              <button type="submit" class="btn btn-primary btn-block"><span class="btn-label">Guardar y continuar</span></button>
+            </form>
+
+            <div id="dashboard" hidden></div>
+          </div>
+
+          <div class="cold-banner" id="coldBanner">
+            <div class="spin" style="border-color:color-mix(in srgb, var(--accent) 30%, transparent);border-top-color:var(--accent);"></div>
+            <span>El servidor estaba dormido — puede tardar hasta 50 segundos en responder la primera vez. Gracias por tu paciencia.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section id="preguntas" class="alt">
+    <div class="wrap">
+      <div class="section-head">
+        <div class="eyebrow">Preguntas frecuentes</div>
+        <h2>Lo que más nos preguntan</h2>
+      </div>
+      <div class="faq">
+        <details open>
+          <summary>¿Quién paga la comisión de la plataforma?</summary>
+          <p>El prestamista, no el prestatario. Es el 5% del monto financiado, y se paga una vez que el contrato ya fue generado y antes de que se autorice el desembolso.</p>
+        </details>
+        <details>
+          <summary>¿Qué pasa si no puedo pagar una cuota a tiempo?</summary>
+          <p>Tienes 3 días de gracia después de la fecha de vencimiento. Pasado ese plazo, la cuota entra en mora y se le aplica el interés moratorio que fijó tu prestamista para esa operación.</p>
+        </details>
+        <details>
+          <summary>¿Cómo se calcula el valor de mi garantía?</summary>
+          <p>Se aplica un castigo de liquidez del 15% sobre el valor que declaras (así el avalúo queda conservador), y ese resultado se compara contra el monto solicitado para calcular el LTV y la calificación de riesgo.</p>
+        </details>
+        <details>
+          <summary>¿Puedo tener más de un préstamo a la vez?</summary>
+          <p>Sí, hasta un máximo de 3 préstamos activos simultáneos como prestatario, y siempre que no tengas cuotas en mora sin resolver.</p>
+        </details>
+        <details>
+          <summary>¿Por qué solo República Dominicana y Panamá?</summary>
+          <p>Prestamista y prestatario deben residir en el mismo país — así evitamos ambigüedad sobre qué ley aplica al contrato. Estamos empezando por estos dos países.</p>
+        </details>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <div class="logo">
+          <span class="logo-mark"><svg viewBox="0 0 24 24" fill="none"><path d="M4 13L10 7L14 11L20 5" stroke="#0B1F1A" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 5H20V11" stroke="#0B1F1A" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          PrestaVía
+        </div>
+        <p>Marketplace de préstamos entre personas en República Dominicana y Panamá, respaldados por garantía real.</p>
+      </div>
+      <div class="footer-links">
+        <div class="footer-col">
+          <h4>Plataforma</h4>
+          <a href="#como-funciona">Cómo funciona</a>
+          <a href="#reglas">Tasas y reglas</a>
+          <a href="#seguridad">Seguridad</a>
+        </div>
+        <div class="footer-col">
+          <h4>Cuenta</h4>
+          <a href="#acceso" data-open-auth="registro">Regístrate</a>
+          <a href="#acceso" data-open-auth="login">Iniciar sesión</a>
+        </div>
+        <div class="footer-col">
+          <h4>Contacto</h4>
+          <button class="copy-email" id="copyEmail" type="button">eco2125services@gmail.com</button>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© <span id="year"></span> PrestaVía. Todos los préstamos están sujetos a evaluación de riesgo.</span>
+      <span>Hecho en República Dominicana 🇩🇴</span>
+    </div>
+  </div>
+</footer>
+
+<div id="toastRoot" aria-live="polite"></div>
+<div id="modalRoot"></div>
+
+<script>
+(function(){
+  "use strict";
+  var API_BASE = "https://prestavia-backend.onrender.com";
+
+  /* ---------- toast ---------- */
+  function toast(kind, msg){
+    var root = document.getElementById("toastRoot");
+    var el = document.createElement("div");
+    el.className = "toast-item " + (kind === "ok" ? "ok" : "err");
+    el.textContent = msg;
+    root.appendChild(el);
+    setTimeout(function(){ el.remove(); }, 5000);
+  }
+
+  /* ---------- modal ---------- */
+  function closeModal(){
+    var root = document.getElementById("modalRoot");
+    root.innerHTML = "";
+  }
+  function openModal(innerHtml){
+    var root = document.getElementById("modalRoot");
+    root.innerHTML = '<div class="modal-overlay" id="modalOverlay"><div class="modal-box">' + innerHtml + '</div></div>';
+    document.getElementById("modalOverlay").addEventListener("click", function(e){
+      if(e.target.id === "modalOverlay") closeModal();
+    });
+  }
+
+  /* ---------- authenticated POST (for ofertas / respuestas) ---------- */
+  function apiPostAuth(path, body, token){
+    return fetch(API_BASE + path, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
+      body: JSON.stringify(body || {})
+    }).then(function(res){
+      return res.json().then(function(data){ return { status: res.status, data: data }; });
+    });
+  }
+
+  /* ---------- instrucciones de pago ----------
+     ⚠️ PENDIENTE: reemplaza estos 3 valores con tus datos reales (Zelle,
+     transferencia bancaria, etc.) antes de publicar. Se usan en la pantalla
+     de registro del prestamista, en el panel mientras su suscripción no
+     esté activa, y en los formularios de reportar pago de cuota/comisión. */
+  var PAYMENT_METODO = "Zelle";
+  var PAYMENT_DESTINATARIO = "Confirma el nombre que te muestre tu banco al enviar — debe coincidir con esta cuenta";
+  var PAYMENT_CUENTA = "eco2125services@gmail.com";
+  function paymentInstructionsHtml(montoTexto){
+    return '<div class="pay-instructions">' +
+      '<strong>Cómo pagar</strong>' +
+      '<div class="pay-row"><span>Método</span><span>' + PAYMENT_METODO + '</span></div>' +
+      '<div class="pay-row"><span>A nombre de</span><span>' + PAYMENT_DESTINATARIO + '</span></div>' +
+      '<div class="pay-row"><span>Cuenta / Email</span><span>' + PAYMENT_CUENTA + '</span></div>' +
+      (montoTexto ? '<div class="pay-row"><span>Monto</span><span>' + montoTexto + '</span></div>' : '') +
+      '<p class="hint">Después de pagar, reporta aquí la referencia — un administrador confirma la transacción manualmente.</p>' +
+    '</div>';
+  }
+
+  /* ---------- límite de tamaño de archivo (el backend acepta hasta 18MB) ---------- */
+  var MAX_UPLOAD_BYTES = 18 * 1024 * 1024;
+  function archivoDemasiadoGrande(file){ return file && file.size > MAX_UPLOAD_BYTES; }
+
+  /* ---------- convertir archivo a base64 (para subir comprobantes/documentos) ---------- */
+  function fileToBase64(file){
+    return new Promise(function(resolve, reject){
+      var reader = new FileReader();
+      reader.onload = function(){
+        var result = reader.result || "";
+        var comma = result.indexOf(",");
+        resolve(comma >= 0 ? result.slice(comma + 1) : result);
+      };
+      reader.onerror = function(){ reject(new Error("No se pudo leer el archivo.")); };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  /* ---------- abrir un documento protegido (contrato, pagaré, cédula, etc.) ----------
+     Mismo arreglo que en el panel admin: la pestaña se abre EN EL CLIC
+     (antes del fetch) para que el bloqueador de pop-ups no la detenga. */
+  function abrirDocumentoProtegido(path, token){
+    if(!path){ toast("err", "Este documento no está disponible todavía."); return; }
+    var ventana = window.open("", "_blank");
+    if(ventana && ventana.document){
+      ventana.document.write("<title>Cargando documento…</title><body style=\"font-family:sans-serif;padding:40px;color:#555\">Cargando documento…</body>");
+    }
+    fetch(API_BASE + path, { headers: { "Authorization": "Bearer " + token } }).then(function(res){
+      if(!res.ok) throw new Error("status " + res.status);
+      return res.blob();
+    }).then(function(blob){
+      var url = URL.createObjectURL(blob);
+      if(ventana && !ventana.closed){ ventana.location = url; }
+      else {
+        var a = document.createElement("a");
+        a.href = url; a.download = "";
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      }
+      setTimeout(function(){ URL.revokeObjectURL(url); }, 30000);
+    }).catch(function(){
+      if(ventana && !ventana.closed){ try{ ventana.close(); }catch(e){} }
+      toast("err", "No se pudo abrir el documento.");
+    });
+  }
+
+  /* ---------- theme ---------- */
+  var root = document.documentElement;
+  function applyTheme(t){
+    if(t){ root.setAttribute("data-theme", t); } else { root.removeAttribute("data-theme"); }
+  }
+  try{
+    var saved = localStorage.getItem("pv-theme");
+    if(saved) applyTheme(saved);
+  }catch(e){}
+  document.getElementById("themeToggle").addEventListener("click", function(){
+    var current = root.getAttribute("data-theme");
+    var prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    var effectiveDark = current ? current === "dark" : prefersDark;
+    var next = effectiveDark ? "light" : "dark";
+    applyTheme(next);
+    try{ localStorage.setItem("pv-theme", next); }catch(e){}
+  });
+
+  /* ---------- year ---------- */
+  document.getElementById("year").textContent = new Date().getFullYear();
+
+  /* ---------- copy email ---------- */
+  document.getElementById("copyEmail").addEventListener("click", function(){
+    var email = "eco2125services@gmail.com";
+    var btn = this;
+    var original = btn.textContent;
+    function done(ok){ btn.textContent = ok ? "¡Copiado!" : email; setTimeout(function(){ btn.textContent = original; }, 1500); }
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(email).then(function(){ done(true); }).catch(function(){ done(false); });
+    } else { done(false); }
+  });
+
+  /* ---------- how-it-works tracks ---------- */
+  var trackBtns = document.querySelectorAll(".track-btn");
+  trackBtns.forEach(function(b){
+    b.addEventListener("click", function(){
+      trackBtns.forEach(function(x){ x.classList.remove("active"); });
+      b.classList.add("active");
+      var t = b.getAttribute("data-track");
+      document.getElementById("steps-prestatario").hidden = t !== "prestatario";
+      document.getElementById("steps-prestamista").hidden = t !== "prestamista";
+    });
+  });
+
+  /* ---------- auth tabs / open helpers ---------- */
+  function showTab(name){
+    document.querySelectorAll(".tabs")[0].querySelectorAll(".tab-btn").forEach(function(b){
+      b.classList.toggle("active", b.getAttribute("data-tab") === name);
+    });
+    document.getElementById("panel-registro").classList.toggle("active", name === "registro");
+    document.getElementById("panel-login").classList.toggle("active", name === "login");
+    var eyebrow = document.getElementById("authEyebrow");
+    var heading = document.getElementById("authHeading");
+    if(name === "login"){ eyebrow.textContent = "Bienvenido de vuelta"; heading.textContent = "Inicia sesión en tu cuenta"; }
+    else { eyebrow.textContent = "Empieza ahora"; heading.textContent = "Crea tu cuenta o inicia sesión"; }
+  }
+  document.querySelectorAll('[data-tab]').forEach(function(b){
+    b.addEventListener("click", function(){ showTab(b.getAttribute("data-tab")); });
+  });
+
+  function showSubtab(name){
+    document.querySelectorAll('[data-subtab]').forEach(function(b){
+      b.classList.toggle("active", b.getAttribute("data-subtab") === name);
+    });
+    document.querySelectorAll('[data-panel]').forEach(function(p){
+      p.classList.toggle("active", p.getAttribute("data-panel") === name);
+    });
+    var side = document.getElementById("authSideTitle");
+    var text = document.getElementById("authSideText");
+    if(name === "reg-prestamista"){
+      side.textContent = "Pon tu capital a trabajar";
+      text.textContent = "Explora solicitudes abiertas en tu país, contraoferta tu tasa, y cobra tus cuotas desde un solo panel.";
+    } else {
+      side.textContent = "Tu dinero, con reglas claras";
+      text.textContent = "Publica tu solicitud con tu garantía y recibe contraofertas de prestamistas de tu país.";
+    }
+  }
+  document.querySelectorAll('[data-subtab]').forEach(function(b){
+    b.addEventListener("click", function(){ showSubtab(b.getAttribute("data-subtab")); });
+  });
+
+  document.querySelectorAll('[data-open-auth]').forEach(function(b){
+    b.addEventListener("click", function(e){
+      var which = b.getAttribute("data-open-auth");
+      showTab(which);
+      if(which === "registro"){
+        var role = b.getAttribute("data-role");
+        showSubtab(role === "prestamista" ? "reg-prestamista" : "reg-prestatario");
+      }
+      document.getElementById("acceso").scrollIntoView({behavior:"smooth", block:"start"});
+    });
+  });
+
+  /* ---------- API helpers ---------- */
+  var coldBanner = document.getElementById("coldBanner");
+  var coldTimer = null;
+
+  function setLoading(form, loading){
+    var btn = form.querySelector('button[type="submit"]');
+    if(!btn) return;
+    var label = btn.querySelector(".btn-label");
+    btn.disabled = loading;
+    if(loading){
+      if(!btn.querySelector(".spin")){
+        var spin = document.createElement("span");
+        spin.className = "spin";
+        btn.insertBefore(spin, label);
+      }
+    } else {
+      var spin = btn.querySelector(".spin");
+      if(spin) spin.remove();
+    }
+  }
+
+  function showMsg(el, type, html){
+    el.className = "form-msg show " + type;
+    el.innerHTML = html;
+  }
+  function hideMsg(el){
+    el.className = "form-msg";
+    el.innerHTML = "";
+  }
+
+  function apiCall(path, body){
+    clearTimeout(coldTimer);
+    coldTimer = setTimeout(function(){ coldBanner.classList.add("show"); }, 3500);
+    return fetch(API_BASE + path, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body || {})
+    }).then(function(res){
+      return res.json().then(function(data){ return { status: res.status, data: data }; });
+    }).finally(function(){
+      clearTimeout(coldTimer);
+      coldBanner.classList.remove("show");
+    });
+  }
+
+  function apiGet(path, token){
+    return fetch(API_BASE + path, {
+      headers: { "Authorization": "Bearer " + token }
+    }).then(function(res){
+      return res.json().then(function(data){ return { status: res.status, data: data }; });
+    });
+  }
+
+  function formToObject(form){
+    var out = {};
+    new FormData(form).forEach(function(v, k){ out[k] = v; });
+    return out;
+  }
+
+  function friendlyError(data){
+    if(data && data.mensaje) return data.mensaje;
+    return "Algo salió mal. Intenta de nuevo en unos segundos.";
+  }
+
+  /* ---------- registro prestatario ---------- */
+  var formRegPrestatario = document.getElementById("form-reg-prestatario");
+  var msgRegPrestatario = document.getElementById("msg-reg-prestatario");
+  formRegPrestatario.addEventListener("submit", function(e){
+    e.preventDefault();
+    hideMsg(msgRegPrestatario);
+    setLoading(formRegPrestatario, true);
+    apiCall("/registro/prestatario", formToObject(formRegPrestatario)).then(function(r){
+      setLoading(formRegPrestatario, false);
+      if(r.data && r.data.exito){
+        // Con la verificación de correo activada, la respuesta ya no trae
+        // claveTemporal — la cuenta se crea recién cuando la persona hace
+        // clic en el enlace que le llega por correo (ver registro.service.js).
+        // Si el correo del servidor todavía no está configurado, sigue
+        // llegando de inmediato como antes (modo de respaldo).
+        var msgExito = "🎉 " + escapeHtmlPv(r.data.mensaje);
+        if(r.data.claveTemporal){
+          msgExito += "<br><br>Tu contraseña temporal es <code>" + escapeHtmlPv(r.data.claveTemporal) + "</code> — guárdala, la necesitas para iniciar sesión (y te pedirá cambiarla).";
+        }
+        showMsg(msgRegPrestatario, "ok", msgExito);
+        formRegPrestatario.reset();
+      } else {
+        showMsg(msgRegPrestatario, "err", friendlyError(r.data));
+      }
+    }).catch(function(){
+      setLoading(formRegPrestatario, false);
+      showMsg(msgRegPrestatario, "err", "No pudimos conectar con el servidor. Intenta de nuevo en un momento.");
+    });
+  });
+
+  /* ---------- registro prestamista ---------- */
+  var formRegPrestamista = document.getElementById("form-reg-prestamista");
+  var msgRegPrestamista = document.getElementById("msg-reg-prestamista");
+  formRegPrestamista.addEventListener("submit", function(e){
+    e.preventDefault();
+    hideMsg(msgRegPrestamista);
+    setLoading(formRegPrestamista, true);
+    apiCall("/registro/prestamista", formToObject(formRegPrestamista)).then(function(r){
+      setLoading(formRegPrestamista, false);
+      if(r.data && r.data.exito){
+        var msgExito2 = "🎉 " + escapeHtmlPv(r.data.mensaje);
+        if(r.data.claveTemporal){
+          msgExito2 += "<br><br>Tu contraseña temporal es <code>" + escapeHtmlPv(r.data.claveTemporal) + "</code> — guárdala. Tu cuenta se activa cuando confirmemos el pago de tu plan." + paymentInstructionsHtml("");
+        }
+        showMsg(msgRegPrestamista, "ok", msgExito2);
+        formRegPrestamista.reset();
+      } else {
+        showMsg(msgRegPrestamista, "err", friendlyError(r.data));
+      }
+    }).catch(function(){
+      setLoading(formRegPrestamista, false);
+      showMsg(msgRegPrestamista, "err", "No pudimos conectar con el servidor. Intenta de nuevo en un momento.");
+    });
+  });
+
+  /* ---------- login ---------- */
+  var formLogin = document.getElementById("form-login");
+  var msgLogin = document.getElementById("msg-login");
+  var formCambiarClave = document.getElementById("form-cambiar-clave");
+  var msgCambiarClave = document.getElementById("msg-cambiar-clave");
+  var dashboardEl = document.getElementById("dashboard");
+  // HALLAZGO DE SEGURIDAD (ALTO) corregido: /auth/actualizar-clave ahora
+  // exige el JWT de sesión (el backend ya lo valida con requiereAutenticacion
+  // y nunca confía en un email del body) — así que aquí guardamos el token
+  // que /auth/login YA entrega incluso cuando requiereCambioClave es true,
+  // en vez de descartarlo como se hacía antes.
+  var pendingToken = "";
+
+  formLogin.addEventListener("submit", function(e){
+    e.preventDefault();
+    hideMsg(msgLogin);
+    setLoading(formLogin, true);
+    var payload = formToObject(formLogin);
+    apiCall("/auth/login", payload).then(function(r){
+      setLoading(formLogin, false);
+      if(r.data && r.data.exito){
+        if(r.data.requiereCambioClave){
+          pendingToken = r.data.token;
+          formLogin.hidden = true;
+          formCambiarClave.hidden = false;
+        } else {
+          try{ sessionStorage.setItem("pv-token", r.data.token); sessionStorage.setItem("pv-user", JSON.stringify(r.data.usuario)); }catch(err){}
+          renderDashboard(r.data.usuario, r.data.token);
+        }
+      } else {
+        showMsg(msgLogin, "err", friendlyError(r.data));
+      }
+    }).catch(function(){
+      setLoading(formLogin, false);
+      showMsg(msgLogin, "err", "No pudimos conectar con el servidor. Intenta de nuevo en un momento.");
+    });
+  });
+
+  formCambiarClave.addEventListener("submit", function(e){
+    e.preventDefault();
+    hideMsg(msgCambiarClave);
+    setLoading(formCambiarClave, true);
+    var payload = formToObject(formCambiarClave);
+    apiPostAuth("/auth/actualizar-clave", payload, pendingToken).then(function(r){
+      setLoading(formCambiarClave, false);
+      if(r.data && r.data.exito){
+        showMsg(msgCambiarClave, "ok", "Contraseña actualizada. Inicia sesión de nuevo con tu nueva contraseña.");
+        formCambiarClave.reset();
+        setTimeout(function(){
+          formCambiarClave.hidden = true;
+          formLogin.hidden = false;
+          hideMsg(msgCambiarClave);
+        }, 1600);
+      } else {
+        showMsg(msgCambiarClave, "err", friendlyError(r.data));
+      }
+    }).catch(function(){
+      setLoading(formCambiarClave, false);
+      showMsg(msgCambiarClave, "err", "No pudimos conectar con el servidor. Intenta de nuevo en un momento.");
+    });
+  });
+
+  function initials(name){
+    if(!name) return "?";
+    var parts = name.trim().split(/\s+/);
+    return ((parts[0]||"")[0] || "") + ((parts[1]||"")[0] || "");
+  }
+
+  function statusChip(status){
+    var goodStates = ["Financiada","Por_Desembolsar","En_Cobro","Pagada","Activo"];
+    var cls = goodStates.indexOf(status) !== -1 ? "good" : "wait";
+    return '<span class="status-chip ' + cls + '">' + (status || "—") + "</span>";
+  }
+  function money(n){
+    if(n === null || n === undefined || n === "--" || n === "") return "—";
+    var num = parseFloat(n);
+    if(isNaN(num)) return "—";
+    return "$" + num.toLocaleString("en-US", {minimumFractionDigits:2, maximumFractionDigits:2});
+  }
+  // Puntaje de credibilidad del solicitante: sube con pagos a tiempo y
+  // préstamos terminados, baja con mora. Antes solo lo veía el Admin —
+  // ahora el prestamista lo ve en cada fila del marketplace, antes de
+  // decidir si ofertar.
+  function reputacionChip(puntos, prestamosExitosos){
+    var p = puntos === null || puntos === undefined ? 0 : parseInt(puntos, 10);
+    var exitosos = prestamosExitosos === null || prestamosExitosos === undefined ? 0 : parseInt(prestamosExitosos, 10);
+    if(p === 0 && exitosos === 0) return '<span class="status-chip wait">Sin historial</span>';
+    var cls = p < 0 ? "bad" : (p >= 30 ? "good" : "wait");
+    var texto = p + " pts" + (exitosos > 0 ? " · " + exitosos + " pagado(s)" : "");
+    return '<span class="status-chip ' + cls + '" title="Puntos de reputación: suben con pagos a tiempo, bajan con mora">' + texto + "</span>";
+  }
+
+  /* ---------- badges de pendientes en el subnav (prestatario/prestamista) ---------- */
+  function setBadgePv(key, n){
+    var el = document.getElementById("subBadge-" + key);
+    if(!el) return;
+    if(n > 0){ el.hidden = false; el.textContent = n; }
+    else { el.hidden = true; }
+  }
+  // Calcula los badges de todas las pestañas al abrir el dashboard, sin
+  // esperar a que el usuario entre a cada una — así ve de una vez qué tiene
+  // pendiente, igual que el panel de administrador.
+  function cargarBadgesDash(token, esPrestamista){
+    if(esPrestamista){
+      apiGet("/marketplace/mis-prestamos", token).then(function(r){
+        if(!(r.data && r.data.exito)) return;
+        var rows = r.data.datos || [];
+        var n = rows.filter(function(o){ return o.estatus === "Financiada" || o.estatus === "Por_Desembolsar"; }).length;
+        setBadgePv("mis-prestamos", n);
+      }).catch(function(){});
+    } else {
+      apiGet("/marketplace/mis-solicitudes", token).then(function(r){
+        if(!(r.data && r.data.exito)) return;
+        var rows = r.data.datos || [];
+        var n = rows.filter(function(o){ return o.estatusOp === "En Negociacion" || o.estatusOp === "En_Negociacion" || o.estatusOp === "Financiada"; }).length;
+        setBadgePv("mis-solicitudes", n);
+      }).catch(function(){});
+      apiGet("/pagos/mis-cuotas", token).then(function(r){
+        if(!(r.data && r.data.exito)) return;
+        var rows = r.data.datos || [];
+        setBadgePv("mis-cuotas", rows.length);
+      }).catch(function(){});
+    }
+  }
+
+  function renderDashboard(usuario, token){
+    resetInactivityTimer();
+    formLogin.hidden = true;
+    formCambiarClave.hidden = true;
+    dashboardEl.hidden = false;
+
+    var esPrestamista = usuario.rol === "Prestamista";
+    var tabs = esPrestamista
+      ? [["oportunidades","Oportunidades"], ["mis-prestamos","Mis préstamos"], ["mi-perfil","Mi perfil"]]
+      : [["mis-solicitudes","Mis solicitudes"], ["mis-cuotas","Mis cuotas"], ["mis-documentos","Mis documentos"], ["mi-perfil","Mi perfil"]];
+
+    dashboardEl.innerHTML =
+      '<div class="dash-header">' +
+        '<div class="dash-who">' +
+          '<div class="avatar">' + initials(usuario.nombreLegal).toUpperCase() + '</div>' +
+          '<div><div class="name">' + escapeHtmlPv(usuario.nombreLegal || "") + '</div><div class="role">' + escapeHtmlPv(usuario.rol || "") + ' · ' + escapeHtmlPv(usuario.estatusSuscripcion || "—") + '</div></div>' +
+        '</div>' +
+        '<button class="btn btn-ghost btn-sm" id="btnLogout">Cerrar sesión</button>' +
+      '</div>' +
+      (esPrestamista && usuario.estatusSuscripcion !== "Activo" ?
+        '<div class="banner-pending"><strong>Tu suscripción todavía no está activa.</strong> Puedes ver el marketplace, pero no podrás ofertar hasta que el administrador confirme tu pago.</div>' +
+        paymentInstructionsHtml("")
+        : '') +
+      '<div id="subNav" class="subnav"></div>' +
+      '<div id="dashBody"><div class="empty-state">Cargando tu información…</div></div>';
+
+    document.getElementById("btnLogout").addEventListener("click", function(){
+      clearTimeout(inactivityTimer);
+      try{ sessionStorage.removeItem("pv-token"); sessionStorage.removeItem("pv-user"); }catch(err){}
+      dashboardEl.hidden = true;
+      dashboardEl.innerHTML = "";
+      formLogin.hidden = false;
+      formLogin.reset();
+    });
+
+    var dashBody = document.getElementById("dashBody");
+    var subNav = document.getElementById("subNav");
+    var loadersDash = {
+      "oportunidades": function(){ renderOportunidades(dashBody, token, usuario); },
+      "mis-prestamos": function(){ renderMisPrestamos(dashBody, token, usuario); },
+      "mis-solicitudes": function(){ renderMisSolicitudes(dashBody, token, usuario); },
+      "mis-cuotas": function(){ renderMisCuotas(dashBody, token, usuario); },
+      "mis-documentos": function(){ renderMisDocumentos(dashBody, token, usuario); },
+      "mi-perfil": function(){ renderMiPerfil(dashBody, token, usuario); }
+    };
+
+    subNav.innerHTML = tabs.map(function(t, i){
+      return '<button class="btn btn-ghost btn-sm' + (i === 0 ? ' active' : '') + '" data-subview="' + t[0] + '">' + t[1] + '<span class="badge" id="subBadge-' + t[0] + '" hidden></span></button>';
+    }).join("");
+    subNav.querySelectorAll("[data-subview]").forEach(function(b){
+      b.addEventListener("click", function(){
+        subNav.querySelectorAll("[data-subview]").forEach(function(x){ x.classList.remove("active"); });
+        b.classList.add("active");
+        loadersDash[b.getAttribute("data-subview")]();
+      });
+    });
+    loadersDash[tabs[0][0]]();
+    cargarBadgesDash(token, esPrestamista);
+  }
+
+  /* ---------- prestamista: oportunidades abiertas ---------- */
+  function renderOportunidades(dashBody, token, usuario){
+    dashBody.innerHTML = '<div class="empty-state">Cargando…</div>';
+    apiGet("/marketplace/oportunidades", token).then(function(r){
+      if(!(r.data && r.data.exito)){ dashBody.innerHTML = '<div class="empty-state">' + friendlyError(r.data) + '</div>'; return; }
+      var rows = r.data.datos || [];
+      if(rows.length === 0){ dashBody.innerHTML = '<div class="empty-state">No hay solicitudes abiertas en tu país todavía.</div>'; return; }
+      var html = '<div class="table-wrap"><table><thead><tr><th>Operación</th><th class="num">Monto</th><th class="num">Plazo</th><th class="num">Tasa</th><th>Garantía</th><th>Reputación</th><th>Estatus</th><th>Acción</th></tr></thead><tbody>';
+      rows.forEach(function(o){
+        var accion = "—";
+        if(o.estatusPublicacion === "Abierta"){
+          accion = "<button class=\"btn btn-ghost btn-sm\" data-ofertar=\"" + escapeHtmlPv(o.idOp) + "\">Hacer oferta</button>";
+        } else if(o.estatusPublicacion === "En Negociacion" || o.estatusPublicacion === "En_Negociacion"){
+          accion = "<span class=\"hint\">Esperando respuesta del prestatario</span>";
+        }
+        html += "<tr><td>" + escapeHtmlPv(o.idOp) + "</td><td class=\"num\">" + money(o.montoSolicitado) + "</td><td class=\"num\">" + o.plazoMeses + " m</td><td class=\"num\">" + (o.interesAnual || 0) + "%</td><td>" + escapeHtmlPv(o.tipoGarantia || "—") + "</td><td>" + reputacionChip(o.puntosReputacion, o.prestamosExitosos) + "</td><td>" + statusChip(o.estatusPublicacion) + "</td><td>" + accion + "</td></tr>";
+      });
+      html += "</tbody></table></div>";
+      dashBody.innerHTML = html;
+      dashBody.querySelectorAll("[data-ofertar]").forEach(function(b){
+        b.addEventListener("click", function(){ abrirModalOferta(b.getAttribute("data-ofertar"), token, function(){ renderOportunidades(dashBody, token, usuario); }); });
+      });
+    }).catch(function(){ dashBody.innerHTML = '<div class="empty-state">No pudimos cargar tus datos. Intenta de nuevo en un momento.</div>'; });
+  }
+
+  /* ---------- prestamista: préstamos ya financiados ---------- */
+  function renderMisPrestamos(dashBody, token, usuario){
+    dashBody.innerHTML = '<div class="empty-state">Cargando…</div>';
+    apiGet("/marketplace/mis-prestamos", token).then(function(r){
+      if(!(r.data && r.data.exito)){ dashBody.innerHTML = '<div class="empty-state">' + friendlyError(r.data) + '</div>'; return; }
+      var rows = r.data.datos || [];
+      setBadgePv("mis-prestamos", rows.filter(function(o){ return o.estatus === "Financiada" || o.estatus === "Por_Desembolsar"; }).length);
+      if(rows.length === 0){ dashBody.innerHTML = '<div class="empty-state">Todavía no has financiado ningún préstamo.</div>'; return; }
+      var html = '<div class="table-wrap"><table><thead><tr><th>Operación</th><th>Prestatario</th><th class="num">Monto</th><th class="num">Tasa</th><th class="num">Cuota</th><th>Estatus</th><th>Acciones</th></tr></thead><tbody>';
+      rows.forEach(function(o){
+        var botones = "<button class=\"btn btn-ghost btn-sm\" data-revisar=\"" + escapeHtmlPv(o.idOp) + "\">Revisar documentos</button>";
+        if(o.estatus === "Financiada" || o.estatus === "Por_Desembolsar"){
+          botones += " <button class=\"btn btn-ghost btn-sm\" data-comision=\"" + escapeHtmlPv(o.idOp) + "\" data-monto=\"" + escapeHtmlPv((o.montoSolicitado * 0.05).toFixed(2)) + "\">Reportar comisión</button>";
+        }
+        if(o.linkPdf){
+          botones += " <button class=\"btn btn-ghost btn-sm\" data-contrato=\"" + escapeHtmlPv(o.linkPdf) + "\">Contrato</button>";
+        }
+        if(o.linkFiniquito){
+          botones += " <button class=\"btn btn-primary btn-sm\" data-finiquito=\"" + escapeHtmlPv(o.linkFiniquito) + "\">Finiquito</button>";
+        }
+        html += "<tr><td>" + escapeHtmlPv(o.idOp) + "</td><td>" + escapeHtmlPv(o.nombrePrestatario || "—") + "</td><td class=\"num\">" + money(o.montoSolicitado) + "</td><td class=\"num\">" + (o.tasaAnual || 0) + "%</td><td class=\"num\">" + money(o.cuotaMensual) + "</td><td>" + statusChip(o.estatus) + "</td><td class=\"row-actions\">" + botones + "</td></tr>";
+      });
+      html += "</tbody></table></div>";
+      dashBody.innerHTML = html;
+      dashBody.querySelectorAll("[data-revisar]").forEach(function(b){
+        b.addEventListener("click", function(){ abrirModalRevisarDocumentos(b.getAttribute("data-revisar"), token, function(){ renderMisPrestamos(dashBody, token, usuario); }); });
+      });
+      dashBody.querySelectorAll("[data-comision]").forEach(function(b){
+        b.addEventListener("click", function(){ abrirModalComision(b.getAttribute("data-comision"), b.getAttribute("data-monto"), token, function(){ renderMisPrestamos(dashBody, token, usuario); }); });
+      });
+      dashBody.querySelectorAll("[data-contrato]").forEach(function(b){
+        b.addEventListener("click", function(){ abrirDocumentoProtegido(b.getAttribute("data-contrato"), token); });
+      });
+      dashBody.querySelectorAll("[data-finiquito]").forEach(function(b){
+        b.addEventListener("click", function(){ abrirDocumentoProtegido(b.getAttribute("data-finiquito"), token); });
+      });
+    }).catch(function(){ dashBody.innerHTML = '<div class="empty-state">No pudimos cargar tus datos. Intenta de nuevo en un momento.</div>'; });
+  }
+
+  /* ---------- prestatario: mis solicitudes ---------- */
+  function renderMisSolicitudes(dashBody, token, usuario){
+    dashBody.innerHTML = '<div class="empty-state">Cargando…</div>';
+    apiGet("/marketplace/mis-solicitudes", token).then(function(r){
+      if(!(r.data && r.data.exito)){ dashBody.innerHTML = '<div class="empty-state">' + friendlyError(r.data) + '</div>'; return; }
+      var rows = r.data.datos || [];
+      setBadgePv("mis-solicitudes", rows.filter(function(o){ return o.estatusOp === "En Negociacion" || o.estatusOp === "En_Negociacion" || o.estatusOp === "Financiada"; }).length);
+      if(rows.length === 0){ dashBody.innerHTML = '<div class="empty-state">Todavía no tienes solicitudes publicadas.</div>'; return; }
+      var hayFinanciadaSinDocs = rows.some(function(o){ return o.estatusOp === "Financiada"; });
+      var prestamosActivos = rows.filter(function(o){
+        return ["Abierta","En Negociacion","En_Negociacion","Financiada","Por_Desembolsar","En_Cobro"].indexOf(o.estatusOp) !== -1;
+      }).length;
+      var html2 = '<div class="modal-actions" style="justify-content:flex-start;margin-bottom:14px;">' +
+          '<button class="btn btn-primary btn-sm" id="btnNuevaSolicitud"' + (prestamosActivos >= 3 ? ' disabled title="Ya tienes 3 préstamos activos — el máximo permitido"' : '') + '>+ Nueva solicitud</button>' +
+          '<span class="hint">' + prestamosActivos + "/3 préstamos activos</span>" +
+        '</div>';
+      html2 += hayFinanciadaSinDocs ?
+        '<div class="banner-pending"><strong>Falta un paso.</strong> Aceptaste una oferta — ahora el prestamista necesita que subas tu <strong>cédula/pasaporte</strong> y <strong>fotos del bien en garantía</strong> para poder generar tu contrato. Ve a la pestaña "Mis documentos" arriba y súbelos.</div>' : '';
+      html2 += '<div class="table-wrap"><table><thead><tr><th>Operación</th><th class="num">Monto</th><th class="num">Tasa</th><th class="num">Cuota</th><th class="num">Saldo</th><th>Estatus</th><th>Acción</th></tr></thead><tbody>';
+      rows.forEach(function(o){
+        var accion2 = "—";
+        if(o.estatusOp === "En Negociacion" || o.estatusOp === "En_Negociacion"){
+          accion2 = "<button class=\"btn btn-primary btn-sm\" data-responder=\"" + escapeHtmlPv(o.idOp) + "\" data-tasa=\"" + escapeHtmlPv(o.tasaAceptada || o.tasa || 0) + "\" data-monto=\"" + escapeHtmlPv(o.montoSolicitado) + "\" data-plazo=\"" + escapeHtmlPv(o.plazoMeses) + "\">Ver oferta</button>";
+        } else if(o.estatusOp === "Financiada"){
+          accion2 = "<span class=\"hint\">Falta subir documentos</span>";
+        } else if(o.estatusOp === "Pagada" && o.linkFiniquito){
+          accion2 = "<button class=\"btn btn-primary btn-sm\" data-finiquito=\"" + escapeHtmlPv(o.linkFiniquito) + "\">Finiquito</button>";
+        }
+        html2 += "<tr><td>" + escapeHtmlPv(o.idOp) + "</td><td class=\"num\">" + money(o.montoSolicitado) + "</td><td class=\"num\">" + ((o.tasaAceptada || o.tasa) ? (o.tasaAceptada || o.tasa) + "%" : "—") + "</td><td class=\"num\">" + money(o.cuotaMensual) + "</td><td class=\"num\">" + money(o.saldoTotalPendiente) + "</td><td>" + statusChip(o.estatusOp) + "</td><td>" + accion2 + "</td></tr>";
+        if(o.solicitudDocumentos && o.solicitudDocumentos.mensaje){
+          html2 += "<tr><td colspan=\"7\" style=\"padding:0;border:none;\"><div class=\"banner-pending\" style=\"margin:4px 0 10px;\"><strong>Operación " + escapeHtmlPv(o.idOp) + ":</strong> el prestamista te pidió documentos — \"" + escapeHtmlPv(o.solicitudDocumentos.mensaje) + "\". Ve a \"Mis documentos\" y súbelos indicando esta misma operación.</div></td></tr>";
+        }
+      });
+      html2 += "</tbody></table></div>";
+      dashBody.innerHTML = html2;
+      document.getElementById("btnNuevaSolicitud").addEventListener("click", function(){
+        abrirModalNuevaSolicitud(token, function(){ renderMisSolicitudes(dashBody, token, usuario); });
+      });
+      dashBody.querySelectorAll("[data-responder]").forEach(function(b){
+        b.addEventListener("click", function(){
+          abrirModalRespuesta({
+            idOp: b.getAttribute("data-responder"),
+            tasa: b.getAttribute("data-tasa"),
+            monto: b.getAttribute("data-monto"),
+            plazo: b.getAttribute("data-plazo")
+          }, token, function(){ renderMisSolicitudes(dashBody, token, usuario); });
+        });
+      });
+      dashBody.querySelectorAll("[data-finiquito]").forEach(function(b){
+        b.addEventListener("click", function(){ abrirDocumentoProtegido(b.getAttribute("data-finiquito"), token); });
+      });
+    }).catch(function(){ dashBody.innerHTML = '<div class="empty-state">No pudimos cargar tus datos. Intenta de nuevo en un momento.</div>'; });
+  }
+
+  /* ---------- prestatario: nueva solicitud de préstamo adicional ---------- */
+  function abrirModalNuevaSolicitud(token, onDone){
+    openModal(
+      '<h3>Nueva solicitud de préstamo</h3>' +
+      '<p class="modal-sub">Se publicará en el marketplace para que los prestamistas de tu país la vean. El interés lo define la negociación con el prestamista, no se fija aquí.</p>' +
+      '<form id="formNuevaSolicitud">' +
+        '<label>Monto solicitado (USD)<input type="number" name="montoSolicitado" min="1" step="0.01" required></label>' +
+        '<label>Plazo (meses)<input type="number" name="plazoMeses" min="1" step="1" value="12" required></label>' +
+        '<label>Tipo de garantía<input type="text" name="tipoGarantia" placeholder="Ej. Vehículo, joyas, electrónico…" required></label>' +
+        '<label>Descripción del bien<input type="text" name="descripcionGarantia" placeholder="Marca, modelo, características"></label>' +
+        '<label>Valor declarado del bien (USD)<input type="number" name="valorDeclarado" min="0" step="0.01" required></label>' +
+        '<div id="msgNuevaSolicitud" class="form-msg"></div>' +
+        '<div class="modal-actions">' +
+          '<button type="button" class="btn btn-ghost" id="btnCancelarNuevaSolicitud">Cancelar</button>' +
+          '<button type="submit" class="btn btn-primary">Publicar solicitud</button>' +
+        '</div>' +
+      '</form>'
+    );
+    document.getElementById("btnCancelarNuevaSolicitud").addEventListener("click", closeModal);
+    document.getElementById("formNuevaSolicitud").addEventListener("submit", function(e){
+      e.preventDefault();
+      var msg = document.getElementById("msgNuevaSolicitud");
+      msg.className = "form-msg"; msg.textContent = "";
+      var data = formToObject(e.target);
+      var submitBtn = e.target.querySelector("button[type=submit]");
+      submitBtn.disabled = true;
+      apiPostAuth("/registro/solicitud", data, token).then(function(r){
+        submitBtn.disabled = false;
+        if(r.data && r.data.exito){ closeModal(); toast("ok", r.data.mensaje || "Solicitud publicada."); onDone(); }
+        else { msg.classList.add("show","err"); msg.textContent = friendlyError(r.data); }
+      }).catch(function(){
+        submitBtn.disabled = false;
+        msg.classList.add("show","err"); msg.textContent = "No se pudo conectar. Intenta de nuevo.";
+      });
+    });
+  }
+
+  /* ---------- prestatario: mis cuotas ---------- */
+  function renderMisCuotas(dashBody, token, usuario){
+    dashBody.innerHTML = '<div class="empty-state">Cargando…</div>';
+    apiGet("/pagos/mis-cuotas", token).then(function(r){
+      if(!(r.data && r.data.exito)){ dashBody.innerHTML = '<div class="empty-state">' + friendlyError(r.data) + '</div>'; return; }
+      var rows = r.data.datos || [];
+      setBadgePv("mis-cuotas", rows.length);
+      if(rows.length === 0){ dashBody.innerHTML = '<div class="empty-state">No tienes cuotas pendientes en este momento.</div>'; return; }
+      var html = '<div class="table-wrap"><table><thead><tr><th>Operación</th><th class="num">Cuota #</th><th class="num">Monto</th><th>Vence</th><th>Acción</th></tr></thead><tbody>';
+      rows.forEach(function(c){
+        html += "<tr><td>" + escapeHtmlPv(c.idOp) + "</td><td class=\"num\">" + escapeHtmlPv(c.numCuota) + "</td><td class=\"num\">" + money(c.montoCuota) + "</td><td>" + dateFmtSimple(c.fechaVenc) + "</td><td><button class=\"btn btn-primary btn-sm\" data-pagar=\"" + escapeHtmlPv(c.idPago) + "\" data-monto=\"" + escapeHtmlPv(c.montoCuota) + "\" data-idop=\"" + escapeHtmlPv(c.idOp) + "\">Reportar pago</button></td></tr>";
+      });
+      html += "</tbody></table></div>";
+      dashBody.innerHTML = html;
+      dashBody.querySelectorAll("[data-pagar]").forEach(function(b){
+        b.addEventListener("click", function(){ abrirModalReportarCuota(b.getAttribute("data-pagar"), b.getAttribute("data-monto"), b.getAttribute("data-idop"), token, function(){ renderMisCuotas(dashBody, token, usuario); }); });
+      });
+    }).catch(function(){ dashBody.innerHTML = '<div class="empty-state">No pudimos cargar tus datos. Intenta de nuevo en un momento.</div>'; });
+  }
+  function dateFmtSimple(iso){
+    if(!iso) return "—";
+    var d = new Date(iso);
+    if(isNaN(d.getTime())) return "—";
+    return d.toLocaleDateString("es-DO", { year: "numeric", month: "short", day: "numeric" });
+  }
+
+  /* ---------- prestatario: mis documentos ---------- */
+  var ESTATUS_IA_LABEL = {
+    "Validado_IA": ["good", "Validado por IA"],
+    "Revision_Manual_IA": ["wait", "En revisión manual"],
+    "Pendiente_Revision_Manual": ["wait", "Pendiente de revisión"],
+    "Pendiente_Documento": ["wait", "Pendiente"]
+  };
+  function chipEstatusIA(estatus){
+    var def = ESTATUS_IA_LABEL[estatus] || ["wait", estatus || "—"];
+    return '<span class="status-chip ' + def[0] + '">' + def[1] + '</span>';
+  }
+  function renderMisDocumentos(dashBody, token, usuario){
+    dashBody.innerHTML = '<div class="empty-state">Cargando…</div>';
+    // Antes esta pantalla traía SOLO /documentos/mis-documentos y pintaba
+    // una única lista de "Cédula" y una única lista de "Bien en garantía"
+    // con TODOS los documentos del prestatario juntos, sin importar a cuál
+    // solicitud pertenecía cada uno. Si el prestatario tenía 2+ solicitudes
+    // activas a la vez (con el mismo prestamista o con dos distintos), los
+    // documentos de una se veían mezclados con los de la otra, y no había
+    // forma de saber a cuál préstamo aceptado le faltaba qué. Ahora se
+    // agrupa por solicitud, usando la misma lista de operaciones activas
+    // que ya existía para el selector del modal de subida.
+    Promise.all([
+      apiGet("/documentos/mis-operaciones-activas", token),
+      apiGet("/documentos/mis-documentos", token)
+    ]).then(function(res){
+      var rOps = res[0], rDocs = res[1];
+      if(!(rOps.data && rOps.data.exito) || !(rDocs.data && rDocs.data.exito)){
+        dashBody.innerHTML = '<div class="empty-state">' + friendlyError((rOps.data && !rOps.data.exito) ? rOps.data : rDocs.data) + '</div>';
+        return;
+      }
+      var operaciones = rOps.data.datos || [];
+      var datos = rDocs.data.datos || { identidad: [], bien: [] };
+      var todos = (datos.identidad || []).concat(datos.bien || []);
+
+      function listaHtml(items, vacio){
+        if(!items.length) return '<div class="empty-state">' + vacio + '</div>';
+        return '<div class="doc-list">' + items.map(function(it){
+          return '<div class="doc-item"><span>' + escapeHtmlPv(it.nombre || "Documento") + '</span>' + chipEstatusIA(it.estatusIA) + '</div>';
+        }).join("") + '</div>';
+      }
+
+      function bloqueOperacion(op){
+        var idOp = op ? op.idOp : null;
+        var deEstaOp = todos.filter(function(d){ return (d.idOportunidad || null) === idOp; });
+        var identidad = deEstaOp.filter(function(d){ return datos.identidad.indexOf(d) !== -1; });
+        var bien = deEstaOp.filter(function(d){ return datos.bien.indexOf(d) !== -1; });
+        var titulo = op ? ('Solicitud ' + escapeHtmlPv(op.idOp) + ' — ' + money(op.monto) + ' ' + statusChip(op.estatus))
+                         : 'Documentos sin solicitud asociada';
+        var idSufijo = idOp || "sin-op";
+        return (
+          '<div class="card" style="margin-bottom:18px;">' +
+            '<h3 style="margin-bottom:10px;">' + titulo + '</h3>' +
+            '<p class="hint" style="margin:0 0 10px;">Cédula o pasaporte</p>' +
+            listaHtml(identidad, "Todavía no has subido tu documento de identidad para esta solicitud.") +
+            '<button class="btn btn-ghost btn-sm" data-subir="identidad" data-idop="' + escapeHtmlPv(idOp || "") + '" style="margin-top:8px;">Subir cédula/pasaporte</button>' +
+            '<p class="hint" style="margin:16px 0 10px;">Bien en garantía</p>' +
+            listaHtml(bien, "Todavía no has subido fotos del bien en garantía para esta solicitud.") +
+            '<button class="btn btn-ghost btn-sm" data-subir="bien" data-idop="' + escapeHtmlPv(idOp || "") + '" style="margin-top:8px;">Subir foto del bien</button>' +
+          '</div>'
+        );
+      }
+
+      var html = "";
+      if(operaciones.length === 0){
+        html += '<div class="empty-state" style="margin-bottom:14px;">Todavía no tienes solicitudes activas. Puedes subir tus documentos de todos modos — quedarán listos para cuando un prestamista te acepte.</div>';
+      }
+      operaciones.forEach(function(op){ html += bloqueOperacion(op); });
+      var sinOp = todos.filter(function(d){ return !d.idOportunidad; });
+      if(sinOp.length > 0 || operaciones.length === 0) html += bloqueOperacion(null);
+
+      dashBody.innerHTML = html;
+      dashBody.querySelectorAll("[data-subir]").forEach(function(btn){
+        btn.addEventListener("click", function(){
+          var tipo = btn.getAttribute("data-subir");
+          var idOp = btn.getAttribute("data-idop") || null;
+          abrirModalSubirDocumento(tipo, token, function(){ renderMisDocumentos(dashBody, token, usuario); }, idOp);
+        });
+      });
+    }).catch(function(){ dashBody.innerHTML = '<div class="empty-state">No pudimos cargar tus datos. Intenta de nuevo en un momento. Si el problema sigue, cierra sesión y vuelve a entrar.</div>'; });
+  }
+  function escapeHtmlPv(s){
+    return (s || "").toString().replace(/[&<>"']/g, function(c){
+      return { "&":"&amp;", "<":"&lt;", ">":"&gt;", "\"":"&quot;", "'":"&#39;" }[c];
+    });
+  }
+
+  /* ---------- mi perfil (ambos roles): ver/editar datos + cambiar contraseña ---------- */
+  function renderMiPerfil(dashBody, token, usuario){
+    dashBody.innerHTML = '<div class="empty-state">Cargando…</div>';
+    apiGet("/usuarios/mi-perfil", token).then(function(r){
+      if(!(r.data && r.data.exito)){ dashBody.innerHTML = '<div class="empty-state">' + friendlyError(r.data) + '</div>'; return; }
+      var d = r.data.datos;
+      dashBody.innerHTML =
+        '<div class="banner-pending" style="background:var(--bg-alt);border-color:var(--border);">' +
+          '<strong>Tu reputación: ' + reputacionChip(d.puntos_reputacion, d.prestamos_exitosos) + '</strong>' +
+          '<p style="margin:6px 0 0;font-size:13px;">Suma puntos cada vez que pagas una cuota a tiempo o terminas de pagar un préstamo — los prestamistas ven este puntaje antes de decidir si ofertarte. Una cuota en mora resta puntos.</p>' +
+        '</div>' +
+        '<form id="formPerfil" style="max-width:420px;">' +
+          '<label>Nombre completo<input type="text" name="nombreLegal" value="' + escapeHtmlPv(d.nombre_legal) + '" required></label>' +
+          '<label>Email <span class="hint">— no editable, es tu usuario de acceso</span><input type="email" value="' + escapeHtmlPv(d.email) + '" disabled></label>' +
+          '<label>Teléfono<input type="text" name="telefono" value="' + escapeHtmlPv(d.telefono) + '"></label>' +
+          '<label>Dirección<input type="text" name="direccion" value="' + escapeHtmlPv(d.direccion_fiscal) + '"></label>' +
+          '<div id="msgPerfil" class="form-msg"></div>' +
+          '<div class="modal-actions" style="justify-content:flex-start;">' +
+            '<button type="submit" class="btn btn-primary">Guardar cambios</button>' +
+          '</div>' +
+        '</form>' +
+        '<h3 style="margin:28px 0 10px;">Cambiar contraseña</h3>' +
+        '<form id="formNuevaClave" style="max-width:420px;">' +
+          '<label>Nueva contraseña (mínimo 8 caracteres, con letra y número)<input type="password" name="nuevaClave" minlength="8" pattern="(?=.*[A-Za-z])(?=.*[0-9]).{8,}" title="Mínimo 8 caracteres, con al menos una letra y un número" required></label>' +
+          '<div id="msgClave" class="form-msg"></div>' +
+          '<div class="modal-actions" style="justify-content:flex-start;">' +
+            '<button type="submit" class="btn btn-ghost">Actualizar contraseña</button>' +
+          '</div>' +
+        '</form>';
+
+      document.getElementById("formPerfil").addEventListener("submit", function(e){
+        e.preventDefault();
+        var msg = document.getElementById("msgPerfil");
+        msg.className = "form-msg"; msg.textContent = "";
+        var data = formToObject(e.target);
+        apiPatchAuth("/usuarios/mi-perfil", data, token).then(function(r2){
+          if(r2.data && r2.data.exito){
+            msg.classList.add("show","ok"); msg.textContent = r2.data.mensaje || "Guardado.";
+            toast("ok", "Tu información fue actualizada.");
+          } else {
+            msg.classList.add("show","err"); msg.textContent = friendlyError(r2.data);
+          }
+        }).catch(function(){
+          msg.classList.add("show","err"); msg.textContent = "No se pudo conectar. Intenta de nuevo.";
+        });
+      });
+
+      document.getElementById("formNuevaClave").addEventListener("submit", function(e){
+        e.preventDefault();
+        var msg = document.getElementById("msgClave");
+        msg.className = "form-msg"; msg.textContent = "";
+        var nuevaClave = formToObject(e.target).nuevaClave;
+        apiPostAuth("/auth/actualizar-clave", { nuevaClave: nuevaClave }, token).then(function(r2){
+          if(r2.data && r2.data.exito){
+            msg.classList.add("show","ok"); msg.textContent = r2.data.mensaje || "Contraseña actualizada.";
+            e.target.reset();
+          } else {
+            msg.classList.add("show","err"); msg.textContent = friendlyError(r2.data);
+          }
+        }).catch(function(){
+          msg.classList.add("show","err"); msg.textContent = "No se pudo conectar. Intenta de nuevo.";
+        });
+      });
+    }).catch(function(){ dashBody.innerHTML = '<div class="empty-state">No pudimos cargar tus datos. Intenta de nuevo en un momento.</div>'; });
+  }
+  function apiPatchAuth(path, body, token){
+    return fetch(API_BASE + path, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
+      body: JSON.stringify(body || {})
+    }).then(function(res){
+      return res.json().then(function(data){ return { status: res.status, data: data }; });
+    });
+  }
+
+  /* ---------- prestamista: hacer oferta (contraoferta) ---------- */
+  function abrirModalOferta(idOp, token, onDone){
+    openModal(
+      '<h3>Hacer una oferta</h3>' +
+      '<p class="modal-sub">Propón tu tasa de interés anual para la operación <strong>' + idOp + '</strong>. El prestatario podrá aceptarla o rechazarla.</p>' +
+      '<form id="formOferta">' +
+        '<label>Tasa de interés anual (%)<input type="number" name="nuevaTasa" min="0.1" max="30" step="0.1" placeholder="Ej: 18" required></label>' +
+        '<label>Tasa de mora diaria (%) <span class="hint">— opcional, 0.5% por defecto</span><input type="number" name="tasaMoraDiaria" min="0" max="5" step="0.1" placeholder="0.5"></label>' +
+        '<div id="msgOferta" class="form-msg"></div>' +
+        '<div class="modal-actions">' +
+          '<button type="button" class="btn btn-ghost" id="btnCancelarOferta">Cancelar</button>' +
+          '<button type="submit" class="btn btn-primary">Enviar oferta</button>' +
+        '</div>' +
+      '</form>'
+    );
+    document.getElementById("btnCancelarOferta").addEventListener("click", closeModal);
+    document.getElementById("formOferta").addEventListener("submit", function(e){
+      e.preventDefault();
+      var msg = document.getElementById("msgOferta");
+      msg.className = "form-msg"; msg.textContent = "";
+      var data = formToObject(e.target);
+      var submitBtn = e.target.querySelector("button[type=submit]");
+      submitBtn.disabled = true;
+      apiPostAuth("/marketplace/contraoferta", { idOp: idOp, nuevaTasa: data.nuevaTasa, tasaMoraDiaria: data.tasaMoraDiaria || 0.5 }, token).then(function(r){
+        submitBtn.disabled = false;
+        if(r.data && r.data.exito){
+          closeModal();
+          toast("ok", r.data.mensaje || "Oferta enviada.");
+          onDone();
+        } else {
+          msg.classList.add("show", "err");
+          msg.textContent = friendlyError(r.data);
+        }
+      }).catch(function(){
+        submitBtn.disabled = false;
+        msg.classList.add("show", "err");
+        msg.textContent = "No se pudo conectar. Intenta de nuevo.";
+      });
+    });
+  }
+
+  /* ---------- prestatario: aceptar / rechazar oferta ---------- */
+  function abrirModalRespuesta(op, token, onDone){
+    openModal(
+      '<h3>Oferta recibida</h3>' +
+      '<p class="modal-sub">Un prestamista propuso esta tasa para tu solicitud <strong>' + op.idOp + '</strong>. Revisa los términos antes de aceptar — aceptar genera tu contrato digital.</p>' +
+      '<div class="offer-summary">' +
+        '<div><span>Monto solicitado</span><span>' + money(op.monto) + '</span></div>' +
+        '<div><span>Plazo</span><span>' + op.plazo + ' meses</span></div>' +
+        '<div><span>Tasa anual propuesta</span><span>' + op.tasa + '%</span></div>' +
+      '</div>' +
+      '<form id="formRespuesta">' +
+        '<label>Firma digital (escribe tu nombre completo para firmar) <input type="text" name="firma" placeholder="Tu nombre completo" required></label>' +
+        '<div id="msgRespuesta" class="form-msg"></div>' +
+        '<div class="modal-actions">' +
+          '<button type="button" class="btn btn-ghost" id="btnRechazar">Rechazar</button>' +
+          '<button type="submit" class="btn btn-primary">Aceptar y firmar</button>' +
+        '</div>' +
+      '</form>'
+    );
+    var msg = document.getElementById("msgRespuesta");
+    function enviar(aceptada, firma){
+      msg.className = "form-msg"; msg.textContent = "";
+      apiPostAuth("/marketplace/responder", { idOp: op.idOp, aceptada: aceptada, firma: firma || undefined }, token).then(function(r){
+        if(r.data && r.data.exito){
+          closeModal();
+          toast("ok", r.data.mensaje || "Listo.");
+          onDone();
+        } else {
+          msg.classList.add("show", "err");
+          msg.textContent = friendlyError(r.data);
+        }
+      }).catch(function(){
+        msg.classList.add("show", "err");
+        msg.textContent = "No se pudo conectar. Intenta de nuevo.";
+      });
+    }
+    document.getElementById("btnRechazar").addEventListener("click", function(){
+      if(confirm("¿Seguro que quieres rechazar esta oferta? Tu solicitud volverá a estar abierta en el marketplace.")){
+        enviar(false, null);
+      }
+    });
+    document.getElementById("formRespuesta").addEventListener("submit", function(e){
+      e.preventDefault();
+      var firma = formToObject(e.target).firma;
+      enviar(true, firma);
+    });
+  }
+
+  /* ---------- prestatario: reportar pago de una cuota ---------- */
+  function abrirModalReportarCuota(idPago, montoSugerido, idOp, token, onDone){
+    var saldoTotalConocido = null; // se llena al cargar el resumen real del préstamo
+    openModal(
+      '<h3>Reportar pago de cuota</h3>' +
+      '<p class="modal-sub">Sube el comprobante de tu transferencia o pago y un administrador la validará.</p>' +
+      '<p id="saldoHint" class="hint"></p>' +
+      '<form id="formCuota">' +
+        '<label>Monto pagado (USD)<input type="number" name="montoPagado" min="0.01" step="0.01" value="' + montoSugerido + '" required></label>' +
+        '<label>Método de pago<select name="metodoPago"><option value="Zelle">Zelle</option><option value="Transferencia">Transferencia bancaria</option><option value="Efectivo">Efectivo</option><option value="Otro">Otro</option></select></label>' +
+        '<label>Referencia / número de confirmación<input type="text" name="referencia" placeholder="Opcional"></label>' +
+        '<label>Comprobante (foto o captura) <span class="hint">— opcional, máx. 18 MB</span><input type="file" name="comprobante" accept="image/*,application/pdf"></label>' +
+        paymentInstructionsHtml(money(montoSugerido)) +
+        '<div id="msgCuota" class="form-msg"></div>' +
+        '<div class="modal-actions">' +
+          '<button type="button" class="btn btn-ghost" id="btnCancelarCuota">Cancelar</button>' +
+          '<button type="submit" class="btn btn-primary">Reportar pago</button>' +
+        '</div>' +
+      '</form>'
+    );
+    document.getElementById("btnCancelarCuota").addEventListener("click", closeModal);
+
+    if(idOp){
+      apiGet("/pagos/resumen/" + idOp, token).then(function(r){
+        if(r.data && r.data.exito && r.data.datos){
+          saldoTotalConocido = r.data.datos.saldoTotalPendiente;
+          var hint = document.getElementById("saldoHint");
+          if(hint) hint.textContent = "Saldo total pendiente de este préstamo: " + money(saldoTotalConocido) + ". No puedes reportar más que eso.";
+        }
+      }).catch(function(){});
+    }
+
+    document.getElementById("formCuota").addEventListener("submit", function(e){
+      e.preventDefault();
+      var msg = document.getElementById("msgCuota");
+      msg.className = "form-msg"; msg.textContent = "";
+      var data = formToObject(e.target);
+      var montoNum = parseFloat(data.montoPagado) || 0;
+      if(saldoTotalConocido !== null && montoNum > saldoTotalConocido + 0.01){
+        msg.classList.add("show","err");
+        msg.textContent = "Ese monto es mayor a tu saldo pendiente (" + money(saldoTotalConocido) + "). Reporta esa cantidad exacta o menos.";
+        return;
+      }
+      var fileInput = e.target.querySelector("input[name=comprobante]");
+      var file = fileInput.files[0];
+      if(archivoDemasiadoGrande(file)){
+        msg.classList.add("show","err"); msg.textContent = "Ese archivo pesa demasiado — usa una foto o PDF de menos de 18 MB.";
+        return;
+      }
+      var submitBtn = e.target.querySelector("button[type=submit]");
+      submitBtn.disabled = true;
+
+      function enviarReporte(archivoBase64, archivoMimeType, archivoNombre){
+        apiPostAuth("/pagos/reportar", {
+          idPago: idPago, montoPagado: data.montoPagado, metodoPago: data.metodoPago, referencia: data.referencia,
+          archivoBase64: archivoBase64, archivoMimeType: archivoMimeType, archivoNombre: archivoNombre
+        }, token).then(function(r){
+          submitBtn.disabled = false;
+          if(r.data && r.data.exito){ closeModal(); toast("ok", r.data.mensaje || "Pago reportado."); onDone(); }
+          else {
+            msg.classList.add("show","err");
+            msg.textContent = friendlyError(r.data) || (r.data && r.data.mensaje) || "No se pudo reportar el pago.";
+          }
+        }).catch(function(){
+          submitBtn.disabled = false;
+          msg.classList.add("show","err"); msg.textContent = "No se pudo conectar. Intenta de nuevo.";
+        });
+      }
+      if(file){
+        fileToBase64(file).then(function(b64){ enviarReporte(b64, file.type, file.name); })
+          .catch(function(){ submitBtn.disabled = false; msg.classList.add("show","err"); msg.textContent = "No se pudo leer el archivo adjunto."; });
+      } else {
+        enviarReporte(null, null, null);
+      }
+    });
+  }
+
+  /* ---------- prestamista: reportar pago de la comisión del 5% ---------- */
+  function abrirModalComision(idOp, montoSugerido, token, onDone){
+    openModal(
+      '<h3>Reportar pago de comisión</h3>' +
+      '<p class="modal-sub">Comisión de plataforma (5%) sobre la operación <strong>' + idOp + '</strong>.</p>' +
+      '<form id="formComision">' +
+        '<label>Monto pagado (USD)<input type="number" name="montoPagado" min="0.01" step="0.01" value="' + montoSugerido + '" required></label>' +
+        '<label>Método de pago<select name="metodoPago"><option value="Zelle">Zelle</option><option value="Transferencia">Transferencia bancaria</option><option value="Efectivo">Efectivo</option><option value="Otro">Otro</option></select></label>' +
+        '<label>Referencia / número de confirmación<input type="text" name="referencia" placeholder="Opcional"></label>' +
+        '<label>Comprobante (foto o captura) <span class="hint">— opcional, máx. 18 MB</span><input type="file" name="comprobante" accept="image/*,application/pdf"></label>' +
+        paymentInstructionsHtml("$" + montoSugerido) +
+        '<div id="msgComision" class="form-msg"></div>' +
+        '<div class="modal-actions">' +
+          '<button type="button" class="btn btn-ghost" id="btnCancelarComision">Cancelar</button>' +
+          '<button type="submit" class="btn btn-primary">Reportar pago</button>' +
+        '</div>' +
+      '</form>'
+    );
+    document.getElementById("btnCancelarComision").addEventListener("click", closeModal);
+    document.getElementById("formComision").addEventListener("submit", function(e){
+      e.preventDefault();
+      var msg = document.getElementById("msgComision");
+      msg.className = "form-msg"; msg.textContent = "";
+      var data = formToObject(e.target);
+      var fileInput = e.target.querySelector("input[name=comprobante]");
+      var file = fileInput.files[0];
+      if(archivoDemasiadoGrande(file)){
+        msg.classList.add("show","err"); msg.textContent = "Ese archivo pesa demasiado — usa una foto o PDF de menos de 18 MB.";
+        return;
+      }
+      var submitBtn = e.target.querySelector("button[type=submit]");
+      submitBtn.disabled = true;
+
+      function enviarReporte(archivoBase64, archivoMimeType, archivoNombre){
+        apiPostAuth("/pagos/comision/reportar", {
+          idOportunidad: idOp, montoPagado: data.montoPagado, metodoPago: data.metodoPago, referencia: data.referencia,
+          archivoBase64: archivoBase64, archivoMimeType: archivoMimeType, archivoNombre: archivoNombre
+        }, token).then(function(r){
+          submitBtn.disabled = false;
+          if(r.data && r.data.exito){ closeModal(); toast("ok", r.data.mensaje || "Comisión reportada."); onDone(); }
+          else { msg.classList.add("show","err"); msg.textContent = friendlyError(r.data); }
+        }).catch(function(){
+          submitBtn.disabled = false;
+          msg.classList.add("show","err"); msg.textContent = "No se pudo conectar. Intenta de nuevo.";
+        });
+      }
+      if(file){
+        fileToBase64(file).then(function(b64){ enviarReporte(b64, file.type, file.name); })
+          .catch(function(){ submitBtn.disabled = false; msg.classList.add("show","err"); msg.textContent = "No se pudo leer el archivo adjunto."; });
+      } else {
+        enviarReporte(null, null, null);
+      }
+    });
+  }
+
+  /* ---------- prestatario: subir documento (identidad o bien) ---------- */
+  // idOpPreseleccionada: cuando se abre desde el bloque de una solicitud
+  // específica (en "Mis documentos") ya sabemos a cuál pertenece el
+  // documento, así que subimos directo a esa operación sin preguntar ni
+  // depender de la llamada a /documentos/mis-operaciones-activas — esto
+  // también evita el error "No se pudo cargar tu información" cuando esa
+  // llamada falla, en el caso más común (ya se conoce la solicitud).
+  function abrirModalSubirDocumento(tipo, token, onDone, idOpPreseleccionada){
+    var esIdentidad = tipo === "identidad";
+
+    if(idOpPreseleccionada){
+      return abrirFormularioSubirDocumento(tipo, token, onDone, false, [], idOpPreseleccionada);
+    }
+
+    openModal('<h3>' + (esIdentidad ? "Subir cédula o pasaporte" : "Subir foto del bien en garantía") + '</h3><div class="empty-state">Cargando…</div>');
+
+    apiGet("/documentos/mis-operaciones-activas", token).then(function(r){
+      if(!(r.data && r.data.exito)){
+        // La operación de red sí llegó, pero el backend reportó un error
+        // (token vencido, error de base de datos, etc.) — no lo tratamos
+        // como "no tiene solicitudes", se lo decimos tal cual.
+        closeModal();
+        toast("err", friendlyError(r.data));
+        return;
+      }
+      var operaciones = r.data.datos || [];
+      // Si tiene 2+ solicitudes activas a la vez, no se puede adivinar a
+      // cuál pertenece el documento — se le pide elegir, así nunca se
+      // mezclan documentos entre dos préstamos/prestamistas distintos.
+      var necesitaElegir = operaciones.length > 1;
+      abrirFormularioSubirDocumento(tipo, token, onDone, necesitaElegir, operaciones, null);
+    }).catch(function(){
+      closeModal();
+      toast("err", "No se pudo cargar tu información. Intenta de nuevo.");
+    });
+  }
+
+  function abrirFormularioSubirDocumento(tipo, token, onDone, necesitaElegir, operaciones, idOpPreseleccionada){
+    var esIdentidad = tipo === "identidad";
+    openModal(
+        '<h3>' + (esIdentidad ? "Subir cédula o pasaporte" : "Subir foto del bien en garantía") + '</h3>' +
+        '<p class="modal-sub">' + (esIdentidad ? "Una foto clara del documento, legible, sin reflejos." : "Fotos del bien que declaraste como garantía.") + '</p>' +
+        '<form id="formDoc">' +
+          (necesitaElegir ?
+            '<label>¿A cuál de tus solicitudes corresponde este documento?' +
+              '<select name="idOportunidad" required>' +
+                '<option value="">Elige una solicitud…</option>' +
+                operaciones.map(function(o){ return '<option value="' + escapeHtmlPv(o.idOp) + '">' + escapeHtmlPv(o.idOp) + ' — ' + money(o.monto) + ' (' + escapeHtmlPv(o.estatus) + ')</option>'; }).join("") +
+              '</select>' +
+              '<span class="hint">Tienes varias solicitudes activas — así nos aseguramos de que el prestamista correcto reciba este documento.</span>' +
+            '</label>' : '') +
+          '<label>Archivo <span class="hint">— máx. 18 MB</span><input type="file" name="archivo" accept="image/*,application/pdf" required></label>' +
+          '<div id="msgDoc" class="form-msg"></div>' +
+          '<div class="modal-actions">' +
+            '<button type="button" class="btn btn-ghost" id="btnCancelarDoc">Cancelar</button>' +
+            '<button type="submit" class="btn btn-primary">Subir</button>' +
+          '</div>' +
+        '</form>'
+      );
+      document.getElementById("btnCancelarDoc").addEventListener("click", closeModal);
+      document.getElementById("formDoc").addEventListener("submit", function(e){
+        e.preventDefault();
+        var msg = document.getElementById("msgDoc");
+        msg.className = "form-msg"; msg.textContent = "";
+        var data = formToObject(e.target);
+        if(necesitaElegir && !data.idOportunidad){
+          msg.classList.add("show","err"); msg.textContent = "Elige a cuál solicitud corresponde este documento.";
+          return;
+        }
+        var file = e.target.querySelector("input[name=archivo]").files[0];
+        if(!file){ return; }
+        if(archivoDemasiadoGrande(file)){
+          msg.classList.add("show","err"); msg.textContent = "Ese archivo pesa demasiado — usa una foto o PDF de menos de 18 MB.";
+          return;
+        }
+        var submitBtn = e.target.querySelector("button[type=submit]");
+        submitBtn.disabled = true;
+        var idOpFinal = idOpPreseleccionada || data.idOportunidad || null;
+        fileToBase64(file).then(function(b64){
+          return apiPostAuth(esIdentidad ? "/documentos/identidad" : "/documentos/bien", {
+            archivoBase64: b64, archivoMimeType: file.type, archivoNombre: file.name, idOportunidad: idOpFinal
+          }, token);
+        }).then(function(r){
+          submitBtn.disabled = false;
+          if(r.data && r.data.exito){ closeModal(); toast("ok", r.data.mensaje || "Documento subido."); onDone(); }
+          else { msg.classList.add("show","err"); msg.textContent = friendlyError(r.data); }
+        }).catch(function(){
+          submitBtn.disabled = false;
+          msg.classList.add("show","err"); msg.textContent = "No se pudo subir el archivo. Intenta de nuevo.";
+        });
+      });
+  }
+
+  /* ---------- prestamista: revisar y aprobar/rechazar documentos ---------- */
+  function abrirModalRevisarDocumentos(idOp, token, onDone){
+    openModal('<h3>Revisar documentos</h3><div class="empty-state">Cargando…</div>');
+    Promise.all([
+      apiGet("/documentos/aprobacion/" + idOp, token),
+      apiGet("/marketplace/documentos/" + idOp, token)
+    ]).then(function(res){
+      var aprobacion = res[0].data && res[0].data.exito ? res[0].data.datos : { estatus: "Pendiente" };
+      var docs = res[1].data && res[1].data.exito ? res[1].data.datos : { identidad: [], bien: [] };
+      var todos = (docs.identidad || []).concat(docs.bien || []);
+      var hayAlertaIA = todos.some(function(d){ return d.estatusIA === "Revision_Manual_IA"; });
+      var faltanDocumentos = (docs.identidad || []).length === 0 || (docs.bien || []).length === 0;
+
+      function listaHtml(items, titulo, vacio){
+        var filas = items.length ? items.map(function(it){
+          return '<div class="doc-item"><button class="btn-ghost btn-sm" data-ver-doc="' + escapeHtmlPv(it.url) + '">' + escapeHtmlPv(it.nombre || "Ver") + '</button>' + chipEstatusIA(it.estatusIA) + '</div>';
+        }).join("") : '<div class="empty-state">' + vacio + '</div>';
+        return '<h3 style="margin:16px 0 8px;font-size:15px;">' + titulo + '</h3><div class="doc-list">' + filas + '</div>';
+      }
+
+      var yaDecidido = aprobacion.estatus === "Aprobado" || aprobacion.estatus === "Aprobado_Bajo_Responsabilidad" || aprobacion.estatus === "Rechazado";
+
+      openModal(
+        '<h3>Revisar documentos — ' + escapeHtmlPv(idOp) + '</h3>' +
+        '<p class="modal-sub">Estatus actual: ' + statusChip(aprobacion.estatus) + '</p>' +
+        (hayAlertaIA ? '<div class="form-msg show err">⚠️ La IA marcó inconsistencias en al menos un documento (puede incluir que el país del documento no coincide con el país declarado). Revísalo con cuidado antes de aprobar.</div>' : '') +
+        (!yaDecidido && faltanDocumentos ? '<div class="form-msg show err">El prestatario todavía no sube todos los documentos — no puedes aprobar ni generar el contrato hasta que estén completos. Puedes pedírselos con el botón de abajo.</div>' : '') +
+        listaHtml(docs.identidad || [], "Identidad", "El prestatario todavía no sube su documento de identidad.") +
+        listaHtml(docs.bien || [], "Bien en garantía", "El prestatario todavía no sube fotos del bien.") +
+        (yaDecidido ? '<p class="hint" style="margin-top:18px;">Ya se registró una decisión para esta operación' + (aprobacion.notas ? ": " + escapeHtmlPv(aprobacion.notas) : "") + '.</p>' :
+          '<div class="modal-actions" style="margin-top:14px;">' +
+            '<button type="button" class="btn btn-ghost" id="btnSolicitarDocs">Pedir documentos al prestatario</button>' +
+          '</div>' +
+          '<form id="formAprobar" style="margin-top:14px;">' +
+            (hayAlertaIA ? '<label style="flex-direction:row;align-items:center;gap:8px;"><input type="checkbox" name="bajoResponsabilidad" style="width:auto;"> Apruebo bajo mi responsabilidad a pesar de la alerta de la IA</label>' : '') +
+            '<label>Notas (opcional)<textarea name="notas" rows="2" placeholder="Observaciones para el expediente"></textarea></label>' +
+            '<div id="msgAprobar" class="form-msg"></div>' +
+            '<div class="modal-actions">' +
+              '<button type="button" class="btn btn-ghost" id="btnRechazarDocs">Rechazar</button>' +
+              '<button type="submit" class="btn btn-primary"' + (faltanDocumentos ? ' disabled title="Faltan documentos por subir"' : '') + '>Aprobar y generar contrato</button>' +
+            '</div>' +
+          '</form>')
+      );
+
+      document.querySelectorAll("[data-ver-doc]").forEach(function(b){
+        b.addEventListener("click", function(){ abrirDocumentoProtegido(b.getAttribute("data-ver-doc"), token); });
+      });
+
+      if(!yaDecidido){
+        document.getElementById("btnSolicitarDocs").addEventListener("click", function(){
+          var mensaje = prompt("Mensaje para el prestatario (opcional):", "Por favor sube tu cédula y fotos del bien en garantía para poder continuar.");
+          if(mensaje === null) return;
+          apiPostAuth("/marketplace/solicitar-documentos", { idOp: idOp, mensajePersonalizado: mensaje }, token).then(function(r){
+            if(r.data && r.data.exito){ toast("ok", r.data.mensaje || "Solicitud registrada."); }
+            else { toast("err", friendlyError(r.data)); }
+          }).catch(function(){ toast("err", "No se pudo conectar. Intenta de nuevo."); });
+        });
+
+        var msgAprobar = document.getElementById("msgAprobar");
+        function decidir(aprobado){
+          if(aprobado && faltanDocumentos){
+            msgAprobar.classList.add("show","err");
+            msgAprobar.textContent = "No puedes aprobar: todavía faltan documentos por subir.";
+            return;
+          }
+          var bajoResponsabilidad = false;
+          var notas = "";
+          var form = document.getElementById("formAprobar");
+          if(form){
+            var fd = formToObject(form);
+            bajoResponsabilidad = !!fd.bajoResponsabilidad;
+            notas = fd.notas || "";
+          }
+          if(hayAlertaIA && aprobado && !bajoResponsabilidad){
+            msgAprobar.classList.add("show","err");
+            msgAprobar.textContent = "Marca la casilla de responsabilidad para aprobar a pesar de la alerta de la IA.";
+            return;
+          }
+          apiPostAuth("/documentos/aprobar", { idOp: idOp, aprobado: aprobado, bajoResponsabilidad: bajoResponsabilidad, notas: notas }, token).then(function(r){
+            if(r.data && r.data.exito){ closeModal(); toast("ok", r.data.mensaje || "Listo."); onDone(); }
+            else { msgAprobar.classList.add("show","err"); msgAprobar.textContent = friendlyError(r.data); }
+          }).catch(function(){
+            msgAprobar.classList.add("show","err"); msgAprobar.textContent = "No se pudo conectar. Intenta de nuevo.";
+          });
+        }
+        document.getElementById("btnRechazarDocs").addEventListener("click", function(){
+          if(confirm("¿Rechazar los documentos? El contrato no se generará hasta que el prestatario suba documentos nuevos.")) decidir(false);
+        });
+        document.getElementById("formAprobar").addEventListener("submit", function(e){ e.preventDefault(); decidir(true); });
+      }
+    }).catch(function(){
+      openModal('<h3>Revisar documentos</h3><div class="empty-state">No se pudo cargar la información. Intenta de nuevo.</div>');
+    });
+  }
+
+  /* ---------- cierre de sesión automático por inactividad (5 min) ---------- */
+  var INACTIVITY_LIMIT_MS = 5 * 60 * 1000;
+  var inactivityTimer = null;
+  function logoutPorInactividad(){
+    try{ sessionStorage.removeItem("pv-token"); sessionStorage.removeItem("pv-user"); }catch(err){}
+    closeModal();
+    dashboardEl.hidden = true;
+    dashboardEl.innerHTML = "";
+    formLogin.hidden = false;
+    formLogin.reset();
+    showTab("login");
+    toast("err", "Tu sesión se cerró automáticamente por inactividad (5 minutos).");
+  }
+  function resetInactivityTimer(){
+    var activa = false;
+    try{ activa = !!sessionStorage.getItem("pv-token"); }catch(err){}
+    if(!activa) return;
+    clearTimeout(inactivityTimer);
+    inactivityTimer = setTimeout(logoutPorInactividad, INACTIVITY_LIMIT_MS);
+  }
+  ["mousemove","keydown","click","scroll","touchstart"].forEach(function(evt){
+    document.addEventListener(evt, resetInactivityTimer, { passive: true });
+  });
+
+  /* ---------- restore session ---------- */
+  try{
+    var savedToken = sessionStorage.getItem("pv-token");
+    var savedUser = sessionStorage.getItem("pv-user");
+    if(savedToken && savedUser){
+      showTab("login");
+      renderDashboard(JSON.parse(savedUser), savedToken);
+    }
+  }catch(e){}
+
+})();
+</script>
+
+</body>
+</html>
