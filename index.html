@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta http-equiv="Content-Security-Policy" content="script-src 'sha256-QpAXSRiTA6Zl1HLJaVr+acLOU4G9VjOsOwQmVbhEC5k='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://prestavia-backend.onrender.com; base-uri 'none'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="script-src 'sha256-r7iP6c1UVBi285b8kd97Penr3JaaryOSa4/vGxo8HQs='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://prestavia-backend.onrender.com; base-uri 'none'; form-action 'self'">
 <title>PrestaVía — Préstamos entre personas, respaldados por garantía</title>
 <meta name="description" content="Marketplace de préstamos peer-to-peer en República Dominicana y Panamá. Tasas de 0.1% a 30% anual, garantía real, contrato digital y comisión transparente del 5%.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -596,6 +596,15 @@ footer{border-top:1px solid var(--border);padding-block:44px;}
               <button type="submit" class="btn btn-primary btn-block">
                 <span class="btn-label">Entrar</span>
               </button>
+              <button type="button" id="btn-olvide" style="background:none;border:0;padding:10px 0 0;color:var(--accent);font:inherit;font-size:14px;cursor:pointer;text-decoration:underline;width:100%;text-align:center;">¿Olvidaste tu contraseña?</button>
+            </form>
+
+            <form id="form-olvide" hidden style="margin-top:6px;">
+              <div class="form-msg show ok" style="margin-bottom:4px;">Escribe el correo de tu cuenta y te enviamos un enlace para restablecer tu contraseña.</div>
+              <label>Correo electrónico<input type="email" name="email" required placeholder="tucorreo@email.com"></label>
+              <div class="form-msg" id="msg-olvide"></div>
+              <button type="submit" class="btn btn-primary btn-block"><span class="btn-label">Enviarme el enlace</span></button>
+              <button type="button" id="btn-olvide-volver" style="background:none;border:0;padding:10px 0 0;color:var(--fg-muted);font:inherit;font-size:14px;cursor:pointer;text-decoration:underline;width:100%;text-align:center;">Volver a iniciar sesión</button>
             </form>
 
             <form id="form-cambiar-clave" hidden style="margin-top:6px;">
@@ -1039,6 +1048,42 @@ footer{border-top:1px solid var(--border);padding-block:44px;}
     }).catch(function(){
       setLoading(formLogin, false);
       showMsg(msgLogin, "err", "No pudimos conectar con el servidor. Intenta de nuevo en un momento.");
+    });
+  });
+
+  /* ---------- ¿Olvidaste tu contraseña? ----------
+     Pide un enlace por correo (POST /auth/olvide-clave). La respuesta del
+     servidor es la misma exista o no la cuenta, así que aquí tampoco se
+     distingue. El enlace abre una página del backend con un botón que genera
+     una clave temporal nueva. */
+  var formOlvide = document.getElementById("form-olvide");
+  var msgOlvide = document.getElementById("msg-olvide");
+  document.getElementById("btn-olvide").addEventListener("click", function(){
+    hideMsg(msgLogin);
+    formLogin.hidden = true;
+    formOlvide.hidden = false;
+    var emailLogin = formLogin.querySelector('input[name="email"]').value;
+    if(emailLogin) formOlvide.querySelector('input[name="email"]').value = emailLogin;
+  });
+  document.getElementById("btn-olvide-volver").addEventListener("click", function(){
+    hideMsg(msgOlvide);
+    formOlvide.hidden = true;
+    formLogin.hidden = false;
+  });
+  formOlvide.addEventListener("submit", function(e){
+    e.preventDefault();
+    hideMsg(msgOlvide);
+    setLoading(formOlvide, true);
+    apiCall("/auth/olvide-clave", formToObject(formOlvide)).then(function(r){
+      setLoading(formOlvide, false);
+      if(r.data && r.data.exito){
+        showMsg(msgOlvide, "ok", escapeHtmlPv(r.data.mensaje));
+      } else {
+        showMsg(msgOlvide, "err", escapeHtmlPv(friendlyError(r.data)));
+      }
+    }).catch(function(){
+      setLoading(formOlvide, false);
+      showMsg(msgOlvide, "err", "No pudimos conectar con el servidor. Intenta de nuevo en un momento.");
     });
   });
 
