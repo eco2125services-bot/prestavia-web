@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta http-equiv="Content-Security-Policy" content="script-src 'sha256-+lxSMHRJDhyDowf66CsvQhP7J5T/BS97MmPkZX/6BSc='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://prestavia-backend.onrender.com; base-uri 'none'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="script-src 'sha256-QpAXSRiTA6Zl1HLJaVr+acLOU4G9VjOsOwQmVbhEC5k='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://prestavia-backend.onrender.com; base-uri 'none'; form-action 'self'">
 <title>PrestaVía — Préstamos entre personas, respaldados por garantía</title>
 <meta name="description" content="Marketplace de préstamos peer-to-peer en República Dominicana y Panamá. Tasas de 0.1% a 30% anual, garantía real, contrato digital y comisión transparente del 5%.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -600,7 +600,7 @@ footer{border-top:1px solid var(--border);padding-block:44px;}
 
             <form id="form-cambiar-clave" hidden style="margin-top:6px;">
               <div class="form-msg show ok" style="margin-bottom:4px;">Tu contraseña es temporal. Elige una nueva para continuar.</div>
-              <label>Nueva contraseña<input type="password" name="nuevaClave" required minlength="8" pattern="(?=.*[A-Za-z])(?=.*[0-9]).{8,}" title="Mínimo 8 caracteres, con al menos una letra y un número" placeholder="Mínimo 8 caracteres, con letra y número"></label>
+              <label>Nueva contraseña<input type="password" name="nuevaClave" required minlength="10" maxlength="128" pattern="(?=.*[A-Za-z])(?=.*[0-9]).{10,}" title="Mínimo 10 caracteres, con al menos una letra y un número" placeholder="Mínimo 10 caracteres, con letra y número"></label>
               <div class="form-msg" id="msg-cambiar-clave"></div>
               <button type="submit" class="btn btn-primary btn-block"><span class="btn-label">Guardar y continuar</span></button>
             </form>
@@ -1480,7 +1480,7 @@ footer{border-top:1px solid var(--border);padding-block:44px;}
         '</form>' +
         '<h3 style="margin:28px 0 10px;">Cambiar contraseña</h3>' +
         '<form id="formNuevaClave" style="max-width:420px;">' +
-          '<label>Nueva contraseña (mínimo 8 caracteres, con letra y número)<input type="password" name="nuevaClave" minlength="8" pattern="(?=.*[A-Za-z])(?=.*[0-9]).{8,}" title="Mínimo 8 caracteres, con al menos una letra y un número" required></label>' +
+          '<label>Nueva contraseña (mínimo 10 caracteres, con letra y número)<input type="password" name="nuevaClave" minlength="10" maxlength="128" pattern="(?=.*[A-Za-z])(?=.*[0-9]).{10,}" title="Mínimo 10 caracteres, con al menos una letra y un número" required></label>' +
           '<div id="msgClave" class="form-msg"></div>' +
           '<div class="modal-actions" style="justify-content:flex-start;">' +
             '<button type="submit" class="btn btn-ghost">Actualizar contraseña</button>' +
