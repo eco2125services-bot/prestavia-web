@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Content-Security-Policy" content="script-src 'sha256-+lxSMHRJDhyDowf66CsvQhP7J5T/BS97MmPkZX/6BSc='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://prestavia-backend.onrender.com; base-uri 'none'; form-action 'self'">
 <title>PrestaVía — Préstamos entre personas, respaldados por garantía</title>
 <meta name="description" content="Marketplace de préstamos peer-to-peer en República Dominicana y Panamá. Tasas de 0.1% a 30% anual, garantía real, contrato digital y comisión transparente del 5%.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -386,14 +387,14 @@ footer{border-top:1px solid var(--border);padding-block:44px;}
           </div>
           <span class="pill on">Abierta</span>
         </div>
-        <div class="ledger-row"><span class="label">Monto solicitado</span><span class="val">$3,000.00</span></div>
+        <div class="ledger-row"><span class="label">Monto solicitado</span><span class="val">$2,000.00</span></div>
         <div class="ledger-row"><span class="label">Plazo</span><span class="val">12 meses</span></div>
-        <div class="ledger-row"><span class="label">Garantía declarada</span><span class="val">Vehículo — $4,200</span></div>
-        <div class="ledger-row"><span class="label">LTV preliminar</span><span class="val good">71.4%</span></div>
-        <div class="ledger-row"><span class="label">Comisión de plataforma (5%)</span><span class="val">$150.00</span></div>
+        <div class="ledger-row"><span class="label">Garantía declarada</span><span class="val">Vehículo — $6,000</span></div>
+        <div class="ledger-row"><span class="label">LTV sobre avalúo (máx. 60%)</span><span class="val good">39.2%</span></div>
+        <div class="ledger-row"><span class="label">Comisión de plataforma (5%)</span><span class="val">$100.00</span></div>
         <div class="cta-line">
           <span class="hint">Cuota mensual estimada</span>
-          <span class="total">$267.94<span style="font-size:13px;color:var(--fg-muted);font-weight:400;">/mes</span></span>
+          <span class="total">$178.63<span style="font-size:13px;color:var(--fg-muted);font-weight:400;">/mes</span></span>
         </div>
       </div>
     </div>
@@ -635,6 +636,7 @@ footer{border-top:1px solid var(--border);padding-block:44px;}
         <details>
           <summary>¿Cómo se calcula el valor de mi garantía?</summary>
           <p>Se aplica un castigo de liquidez del 15% sobre el valor que declaras (así el avalúo queda conservador), y ese resultado se compara contra el monto solicitado para calcular el LTV y la calificación de riesgo.</p>
+          <p><strong>Límite de LTV:</strong> si el monto pedido supera el 60% del avalúo, la solicitud se rechaza automáticamente y no se publica. Con menos de 40% el riesgo se califica como bajo. Ejemplo: una garantía de $6,000 se avalúa en $5,100, así que puedes pedir hasta unos $3,060.</p>
         </details>
         <details>
           <summary>¿Puedo tener más de un préstamo a la vez?</summary>
@@ -728,10 +730,9 @@ footer{border-top:1px solid var(--border);padding-block:44px;}
   }
 
   /* ---------- instrucciones de pago ----------
-     ⚠️ PENDIENTE: reemplaza estos 3 valores con tus datos reales (Zelle,
-     transferencia bancaria, etc.) antes de publicar. Se usan en la pantalla
-     de registro del prestamista, en el panel mientras su suscripción no
-     esté activa, y en los formularios de reportar pago de cuota/comisión. */
+     Datos de la cuenta que recibe los pagos. Se usan en el registro del
+     prestamista, en el panel mientras su suscripción no esté activa, y en
+     los formularios de reportar pago de cuota/comisión. */
   var PAYMENT_METODO = "Zelle";
   var PAYMENT_DESTINATARIO = "Confirma el nombre que te muestre tu banco al enviar — debe coincidir con esta cuenta";
   var PAYMENT_CUENTA = "eco2125services@gmail.com";
