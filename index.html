@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta http-equiv="Content-Security-Policy" content="script-src 'sha256-r7iP6c1UVBi285b8kd97Penr3JaaryOSa4/vGxo8HQs='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://prestavia-backend.onrender.com; base-uri 'none'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="script-src 'sha256-QhsDO7cDQSVMbubCB33RuFkVqGnjGOCd5/8jDOjwu7A='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://prestavia-backend.onrender.com; base-uri 'none'; form-action 'self'">
 <title>PrestaVía — Préstamos entre personas, respaldados por garantía</title>
 <meta name="description" content="Marketplace de préstamos peer-to-peer en República Dominicana y Panamá. Tasas de 0.1% a 30% anual, garantía real, contrato digital y comisión transparente del 5%.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -738,6 +738,20 @@ footer{border-top:1px solid var(--border);padding-block:44px;}
     });
   }
 
+  /* ---------- cierre de sesión en el servidor ----------
+     Invalida el token en el backend (POST /auth/logout), así que aunque
+     alguien lo hubiera copiado deja de servir. Es "mejor esfuerzo": si no hay
+     red igual se limpia la sesión local. */
+  function cerrarSesionServidor(token){
+    if(!token) return;
+    try{
+      fetch(API_BASE + "/auth/logout", { method: "POST", keepalive: true, headers: { "Authorization": "Bearer " + token } }).catch(function(){});
+    }catch(err){}
+  }
+  function tokenGuardado(){
+    try{ return sessionStorage.getItem("pv-token") || ""; }catch(err){ return ""; }
+  }
+
   /* ---------- instrucciones de pago ----------
      Datos de la cuenta que recibe los pagos. Se usan en el registro del
      prestamista, en el panel mientras su suscripción no esté activa, y en
@@ -1202,6 +1216,7 @@ footer{border-top:1px solid var(--border);padding-block:44px;}
 
     document.getElementById("btnLogout").addEventListener("click", function(){
       clearTimeout(inactivityTimer);
+      cerrarSesionServidor(token);
       try{ sessionStorage.removeItem("pv-token"); sessionStorage.removeItem("pv-user"); }catch(err){}
       dashboardEl.hidden = true;
       dashboardEl.innerHTML = "";
@@ -1556,8 +1571,17 @@ footer{border-top:1px solid var(--border);padding-block:44px;}
         var nuevaClave = formToObject(e.target).nuevaClave;
         apiPostAuth("/auth/actualizar-clave", { nuevaClave: nuevaClave }, token).then(function(r2){
           if(r2.data && r2.data.exito){
-            msg.classList.add("show","ok"); msg.textContent = r2.data.mensaje || "Contraseña actualizada.";
+            msg.classList.add("show","ok"); msg.textContent = (r2.data.mensaje || "Contraseña actualizada.") + " Por seguridad se cerrarán todas tus sesiones: vuelve a iniciar sesión.";
             e.target.reset();
+            setTimeout(function(){
+              clearTimeout(inactivityTimer);
+              try{ sessionStorage.removeItem("pv-token"); sessionStorage.removeItem("pv-user"); }catch(err){}
+              dashboardEl.hidden = true;
+              dashboardEl.innerHTML = "";
+              formLogin.hidden = false;
+              formLogin.reset();
+              showTab("login");
+            }, 2200);
           } else {
             msg.classList.add("show","err"); msg.textContent = friendlyError(r2.data);
           }
@@ -1990,6 +2014,7 @@ footer{border-top:1px solid var(--border);padding-block:44px;}
   var INACTIVITY_LIMIT_MS = 5 * 60 * 1000;
   var inactivityTimer = null;
   function logoutPorInactividad(){
+    cerrarSesionServidor(tokenGuardado());
     try{ sessionStorage.removeItem("pv-token"); sessionStorage.removeItem("pv-user"); }catch(err){}
     closeModal();
     dashboardEl.hidden = true;
@@ -2010,13 +2035,28 @@ footer{border-top:1px solid var(--border);padding-block:44px;}
     document.addEventListener(evt, resetInactivityTimer, { passive: true });
   });
 
-  /* ---------- restore session ---------- */
+  /* ---------- restore session ----------
+     El token guardado no se da por bueno: se revalida con el servidor
+     (GET /auth/sesion). Si expiró, se cerró sesión o cambió la clave, se
+     descarta; si sigue vigente se usan los datos ACTUALES del usuario. */
   try{
     var savedToken = sessionStorage.getItem("pv-token");
     var savedUser = sessionStorage.getItem("pv-user");
     if(savedToken && savedUser){
       showTab("login");
-      renderDashboard(JSON.parse(savedUser), savedToken);
+      apiGet("/auth/sesion", savedToken).then(function(r){
+        if(r && r.data && r.data.exito && r.data.usuario){
+          try{ sessionStorage.setItem("pv-user", JSON.stringify(r.data.usuario)); }catch(err){}
+          renderDashboard(r.data.usuario, savedToken);
+        } else if(r && (r.status === 401 || r.status === 403)){
+          try{ sessionStorage.removeItem("pv-token"); sessionStorage.removeItem("pv-user"); }catch(err){}
+        } else {
+          // Error de red o del servidor (p. ej. servidor dormido): no se pierde la sesión, se usa lo guardado.
+          renderDashboard(JSON.parse(savedUser), savedToken);
+        }
+      }).catch(function(){
+        try{ renderDashboard(JSON.parse(savedUser), savedToken); }catch(err){}
+      });
     }
   }catch(e){}
 
