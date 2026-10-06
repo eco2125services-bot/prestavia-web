@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta http-equiv="Content-Security-Policy" content="script-src 'sha256-QhsDO7cDQSVMbubCB33RuFkVqGnjGOCd5/8jDOjwu7A='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://prestavia-backend.onrender.com; base-uri 'none'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="script-src 'sha256-UpCf2sDKjH7espKnDRz+RIO7ZnWRH0XVb+TXPkZwkxw=' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://prestavia-backend.onrender.com https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com; base-uri 'none'; form-action 'self'">
 <title>PrestaVía — Préstamos entre personas, respaldados por garantía</title>
 <meta name="description" content="Marketplace de préstamos peer-to-peer en República Dominicana y Panamá. Tasas de 0.1% a 30% anual, garantía real, contrato digital y comisión transparente del 5%.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -547,6 +547,7 @@ footer{border-top:1px solid var(--border);padding-block:44px;}
                 <label>Valor estimado de la garantía (USD)<input type="number" name="valorGarantia" min="0" step="0.01" placeholder="2200"></label>
                 <label>Descripción de la garantía<input type="text" name="descripcionGarantia" placeholder="Ej. Toyota Corolla 2019"></label>
               </div>
+              <div class="pv-captcha" data-captcha-path="/registro/prestatario"></div>
               <div class="form-msg" id="msg-reg-prestatario"></div>
               <button type="submit" class="btn btn-primary btn-block">
                 <span class="btn-label">Publicar mi solicitud</span>
@@ -580,6 +581,7 @@ footer{border-top:1px solid var(--border);padding-block:44px;}
                 </select>
                 <span class="hint">Tu acceso se activa cuando confirmes el pago con el equipo de PrestaVía.</span>
               </label>
+              <div class="pv-captcha" data-captcha-path="/registro/prestamista"></div>
               <div class="form-msg" id="msg-reg-prestamista"></div>
               <button type="submit" class="btn btn-primary btn-block">
                 <span class="btn-label">Crear cuenta de prestamista</span>
@@ -592,6 +594,7 @@ footer{border-top:1px solid var(--border);padding-block:44px;}
             <form id="form-login">
               <label>Correo electrónico<input type="email" name="email" required placeholder="tucorreo@email.com"></label>
               <label>Contraseña<input type="password" name="clave" required placeholder="••••••••"></label>
+              <div class="pv-captcha" data-captcha-path="/auth/login"></div>
               <div class="form-msg" id="msg-login"></div>
               <button type="submit" class="btn btn-primary btn-block">
                 <span class="btn-label">Entrar</span>
@@ -602,6 +605,7 @@ footer{border-top:1px solid var(--border);padding-block:44px;}
             <form id="form-olvide" hidden style="margin-top:6px;">
               <div class="form-msg show ok" style="margin-bottom:4px;">Escribe el correo de tu cuenta y te enviamos un enlace para restablecer tu contraseña.</div>
               <label>Correo electrónico<input type="email" name="email" required placeholder="tucorreo@email.com"></label>
+              <div class="pv-captcha" data-captcha-path="/auth/olvide-clave"></div>
               <div class="form-msg" id="msg-olvide"></div>
               <button type="submit" class="btn btn-primary btn-block"><span class="btn-label">Enviarme el enlace</span></button>
               <button type="button" id="btn-olvide-volver" style="background:none;border:0;padding:10px 0 0;color:var(--fg-muted);font:inherit;font-size:14px;cursor:pointer;text-decoration:underline;width:100%;text-align:center;">Volver a iniciar sesión</button>
@@ -938,7 +942,39 @@ footer{border-top:1px solid var(--border);padding-block:44px;}
     el.innerHTML = "";
   }
 
+  /* ---------- CAPTCHA (Cloudflare Turnstile) ----------
+     Pega aquí la "site key" (pública) del widget de Turnstile. Mientras esté
+     vacía, no se muestra nada y el sitio funciona como antes. El backend solo
+     lo exige cuando tiene configurada TURNSTILE_SECRET: ambas cosas deben
+     activarse juntas. */
+  var TURNSTILE_SITE_KEY = "0x4AAAAAAFPVpiomWdVRamWZ";
+  var captchaWidgets = {};
+  function iniciarCaptcha(){
+    if(!TURNSTILE_SITE_KEY) return;
+    var s = document.createElement("script");
+    s.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
+    s.async = true; s.defer = true;
+    s.onload = function(){
+      document.querySelectorAll(".pv-captcha").forEach(function(el){
+        captchaWidgets[el.getAttribute("data-captcha-path")] = window.turnstile.render(el, { sitekey: TURNSTILE_SITE_KEY, theme: "auto" });
+      });
+    };
+    document.head.appendChild(s);
+  }
+  function captchaToken(path){
+    var id = captchaWidgets[path];
+    if(!TURNSTILE_SITE_KEY || id === undefined || !window.turnstile) return "";
+    try{ return window.turnstile.getResponse(id) || ""; }catch(err){ return ""; }
+  }
+  function captchaReiniciar(path){
+    var id = captchaWidgets[path];
+    if(id === undefined || !window.turnstile) return;
+    try{ window.turnstile.reset(id); }catch(err){}
+  }
   function apiCall(path, body){
+    body = body || {};
+    var tk = captchaToken(path);
+    if(tk) body.captchaToken = tk;
     clearTimeout(coldTimer);
     coldTimer = setTimeout(function(){ coldBanner.classList.add("show"); }, 3500);
     return fetch(API_BASE + path, {
@@ -950,6 +986,7 @@ footer{border-top:1px solid var(--border);padding-block:44px;}
     }).finally(function(){
       clearTimeout(coldTimer);
       coldBanner.classList.remove("show");
+      captchaReiniciar(path); /* cada token sirve una sola vez */
     });
   }
 
@@ -2034,6 +2071,8 @@ footer{border-top:1px solid var(--border);padding-block:44px;}
   ["mousemove","keydown","click","scroll","touchstart"].forEach(function(evt){
     document.addEventListener(evt, resetInactivityTimer, { passive: true });
   });
+
+  iniciarCaptcha();
 
   /* ---------- restore session ----------
      El token guardado no se da por bueno: se revalida con el servidor
